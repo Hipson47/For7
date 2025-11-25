@@ -1,0 +1,581 @@
+---
+alwaysApply: true
+---
+
+# Advanced Context Management Rules
+
+## Overview
+
+Context management is critical for effective agent operation. This rule defines advanced patterns for optimizing context window usage, managing multi-file operations, and ensuring context accuracy and relevance. The goal is to maximize information density while minimizing token consumption.
+
+## Context Scoping Strategies
+
+### Hierarchical Context Selection
+
+#### Level 1: Atomic Operations (Single File)
+**Scope**: Individual functions, methods, or classes
+**Context Includes**:
+- Target function/method with 3-5 lines of surrounding context
+- Immediate dependencies (imports, related functions)
+- Type definitions and interfaces
+- Documentation/comments for the target
+
+**Guidelines**:
+- Use `@file:function_name` for precise targeting
+- Include only directly related code
+- Focus on single responsibility changes
+
+**Example**:
+```
+Context for updating `validate_user_input()`:
+- The function definition and body
+- Import statements for validation libraries
+- Type definitions for input/output
+- Related helper functions (if < 20 lines total)
+```
+
+#### Level 2: Feature-Level Operations (Multiple Related Files)
+**Scope**: Complete features or user stories
+**Context Includes**:
+- All files directly implementing the feature
+- Shared utilities and common code
+- Database models and migrations
+- API endpoints and handlers
+
+**Guidelines**:
+- Use `@folder:feature_name` for feature boundaries
+- Include integration points between files
+- Limit to 3-5 core files maximum
+
+**Example**:
+```
+User registration feature context:
+- `src/auth/register.py` - main registration logic
+- `src/models/user.py` - user model
+- `src/api/auth.py` - API endpoint
+- `tests/test_register.py` - related tests
+```
+
+#### Level 3: System-Level Operations (Architecture Changes)
+**Scope**: Cross-cutting concerns, architectural modifications
+**Context Includes**:
+- Architecture documentation
+- Configuration files
+- Interface definitions
+- Cross-service dependencies
+
+**Guidelines**:
+- Use `@Docs` for architecture documentation
+- Include interface contracts and APIs
+- Focus on system boundaries and interactions
+
+### Context Boundary Management
+
+#### Inclusion Rules
+**Must Include**:
+- Direct dependencies and imports
+- Interface definitions and contracts
+- Error handling patterns
+- Test files for modified functionality
+
+**Should Include**:
+- Related documentation and comments
+- Configuration that affects the change
+- Performance-critical code paths
+- Security-sensitive operations
+
+**Exclude When Possible**:
+- Unrelated files and functions
+- Generated code and build artifacts
+- Extensive test suites (unless directly affected)
+- Historical code (unless explaining evolution)
+
+#### Boundary Detection Patterns
+
+**Dependency Analysis**:
+```python
+def analyze_context_boundaries(changes):
+    """Analyze what context boundaries need to be included"""
+    boundaries = {
+        'imports': find_import_dependencies(changes),
+        'interfaces': find_interface_contracts(changes),
+        'tests': find_affected_tests(changes),
+        'docs': find_related_documentation(changes)
+    }
+    return calculate_optimal_context(boundaries)
+```
+
+## Token Optimization Techniques
+
+### Context Window Management
+
+#### Progressive Context Loading
+**Strategy**: Load context in stages based on task complexity
+1. **Initial Assessment**: Minimal context for task understanding
+2. **Progressive Expansion**: Add context as understanding deepens
+3. **Focused Refinement**: Narrow context to specific areas of work
+
+**Implementation**:
+```python
+def progressive_context_loading(task_complexity):
+    """Load context progressively based on task requirements"""
+    if task_complexity == 'simple':
+        return load_minimal_context()
+    elif task_complexity == 'medium':
+        return load_feature_context()
+    else:  # complex
+        return load_system_context()
+```
+
+#### Context Compression Patterns
+
+**Summarization Techniques**:
+- **Function Signatures**: Show only method signatures for interfaces
+- **Type Definitions**: Include type information without implementation details
+- **Import Summaries**: List imports without full module content
+- **Test Outlines**: Show test structure without full test code
+
+**Example**:
+```
+Instead of full file content:
+├── src/
+│   ├── models/
+│   │   ├── user.py (150 lines)
+│   │   └── order.py (200 lines)
+│   └── services/
+│       └── payment.py (300 lines)
+
+Use compressed context:
+├── User Model: class User(BaseModel): id, name, email, created_at
+├── Order Model: class Order(BaseModel): id, user_id, total, status, created_at
+├── Payment Service: process_payment(), refund_payment(), validate_transaction()
+```
+
+#### Token Budget Allocation
+
+**Context Categories**:
+- **Core Logic** (40%): Primary code being modified
+- **Dependencies** (25%): Required imports and related functions
+- **Tests** (15%): Test cases and assertions
+- **Documentation** (10%): Comments, docstrings, and guides
+- **Configuration** (10%): Settings and environment variables
+
+**Budget Monitoring**:
+```python
+CONTEXT_BUDGET = {
+    'max_tokens': 8000,
+    'core_logic': 0.4,
+    'dependencies': 0.25,
+    'tests': 0.15,
+    'documentation': 0.1,
+    'configuration': 0.1
+}
+
+def enforce_token_budget(context_parts):
+    """Ensure context fits within token budget"""
+    total_tokens = sum(len(part) for part in context_parts.values())
+    if total_tokens > CONTEXT_BUDGET['max_tokens']:
+        return compress_context(context_parts)
+    return context_parts
+```
+
+## Multi-File Refactoring Context
+
+### Refactoring Context Patterns
+
+#### Extract Method Refactoring
+**Context Requirements**:
+- Original method with surrounding class context
+- Target class/file where method will be moved
+- Import statements that need to be updated
+- Tests that call the original method
+- Documentation that references the method
+
+**Context Flow**:
+1. **Source Context**: Original method and class
+2. **Destination Context**: Target location structure
+3. **Dependency Context**: Import and reference updates
+4. **Test Context**: Test modifications required
+
+#### Class Extraction Refactoring
+**Context Requirements**:
+- Original class with all methods and attributes
+- Related classes that reference the extracted class
+- Database models and migrations
+- API endpoints and serialization
+- Test files for the class
+
+**Context Strategy**:
+```python
+def plan_class_extraction_refactor(original_class, target_location):
+    """Plan context for class extraction refactoring"""
+    context_plan = {
+        'original': {
+            'class_definition': extract_class_definition(original_class),
+            'method_signatures': extract_method_signatures(original_class),
+            'dependencies': find_class_dependencies(original_class)
+        },
+        'destination': {
+            'target_structure': analyze_target_structure(target_location),
+            'import_updates': plan_import_modifications(),
+            'namespace_changes': plan_namespace_updates()
+        },
+        'integration': {
+            'api_endpoints': find_api_references(original_class),
+            'test_updates': find_test_modifications(original_class),
+            'documentation_updates': find_doc_references(original_class)
+        }
+    }
+    return context_plan
+```
+
+#### Module Reorganization Context
+**Context Requirements**:
+- All files in the module being reorganized
+- Import statements across the codebase
+- Configuration references to module paths
+- Documentation and README updates
+- Test file reorganizations
+
+**Implementation Strategy**:
+1. **Dependency Mapping**: Map all imports and references
+2. **Impact Analysis**: Assess change impact on dependent modules
+3. **Migration Planning**: Plan import updates and path changes
+4. **Validation Context**: Include tests and integration points
+
+### Context Consistency Validation
+
+#### Cross-File Consistency Checks
+**Import Consistency**:
+- Verify import paths are correct after moves
+- Check for circular import issues
+- Validate relative vs absolute import usage
+- Ensure import statements match file structure
+
+**Reference Consistency**:
+- Update all references to moved classes/functions
+- Modify configuration files and settings
+- Update documentation and comments
+- Adjust test imports and assertions
+
+**Type Consistency**:
+- Verify type hints remain valid after refactoring
+- Update interface definitions and contracts
+- Modify serialization and API schemas
+- Adjust database model references
+
+## Context Caching and Reuse
+
+### Context Cache Management
+
+#### Cache Strategy Types
+**Static Cache**: Long-term context for stable codebases
+- Architecture documentation
+- Core business logic modules
+- Established design patterns
+- Standard library usage patterns
+
+**Dynamic Cache**: Short-term context for active development
+- Current feature implementation
+- Recent refactoring changes
+- Active test modifications
+- Debugging session context
+
+**Session Cache**: Context maintained during multi-step tasks
+- Plan execution context
+- Multi-file refactoring state
+- Testing campaign progress
+- Documentation writing session
+
+#### Cache Invalidation Rules
+
+**Automatic Invalidation**:
+- File modifications trigger cache updates
+- Import changes invalidate dependency caches
+- Test failures invalidate test-related caches
+- Configuration changes invalidate settings caches
+
+**Manual Invalidation**:
+- Major refactoring requires full cache reset
+- Architecture changes invalidate structural caches
+- New team members require cache refresh
+- Knowledge base updates trigger cache validation
+
+### Context Reuse Patterns
+
+#### Template-Based Reuse
+**Common Patterns**:
+- API endpoint implementation templates
+- Database model creation patterns
+- Test file structure templates
+- Configuration file templates
+
+**Reuse Strategy**:
+```python
+CONTEXT_TEMPLATES = {
+    'api_endpoint': {
+        'imports': ['from fastapi import APIRouter, HTTPException'],
+        'structure': 'router = APIRouter()\n\n@router.post("/endpoint")\nasync def endpoint_handler():\n    pass',
+        'tests': 'def test_endpoint():\n    pass'
+    },
+    'database_model': {
+        'imports': ['from sqlalchemy import Column, Integer, String'],
+        'structure': 'class Model(Base):\n    __tablename__ = "models"\n    id = Column(Integer, primary_key=True)',
+        'migrations': 'def upgrade():\n    pass\ndef downgrade():\n    pass'
+    }
+}
+
+def apply_context_template(template_name, customization):
+    """Apply reusable context template with customizations"""
+    template = CONTEXT_TEMPLATES[template_name]
+    return customize_template(template, customization)
+```
+
+## Context Validation and Quality Assurance
+
+### Context Accuracy Verification
+
+#### Relevance Assessment
+**Context Relevance Metrics**:
+- **Direct Relevance**: Code directly affected by changes (90%+ relevance)
+- **Indirect Relevance**: Code that may be affected (60-90% relevance)
+- **Background Context**: Supporting information (30-60% relevance)
+- **Noise**: Unnecessary or distracting information (<30% relevance)
+
+**Relevance Evaluation**:
+```python
+def evaluate_context_relevance(context_parts, task_requirements):
+    """Evaluate how relevant context is to the task"""
+    relevance_scores = {}
+    for part_name, content in context_parts.items():
+        relevance_scores[part_name] = calculate_relevance_score(
+            content, task_requirements
+        )
+
+    # Filter out low-relevance parts
+    relevant_parts = {
+        name: content for name, content in context_parts.items()
+        if relevance_scores[name] > 0.6
+    }
+
+    return relevant_parts, relevance_scores
+```
+
+#### Completeness Validation
+**Completeness Checks**:
+- All required imports are included
+- Interface definitions are complete
+- Test coverage is adequate
+- Documentation references are current
+- Configuration dependencies are covered
+
+**Validation Process**:
+1. **Static Analysis**: Check for missing dependencies
+2. **Dynamic Analysis**: Verify context works for the task
+3. **Peer Review**: Have other roles validate context appropriateness
+4. **Task Completion**: Confirm context enabled successful task completion
+
+### Context Quality Metrics
+
+#### Quality Dimensions
+**Accuracy**: Context correctly represents the codebase state
+**Completeness**: All necessary information is included
+**Relevance**: Information directly supports the task
+**Currency**: Context reflects recent changes and updates
+**Clarity**: Context is well-organized and understandable
+
+#### Quality Monitoring
+```python
+CONTEXT_QUALITY_METRICS = {
+    'accuracy': measure_context_accuracy(),
+    'completeness': measure_context_completeness(),
+    'relevance': measure_context_relevance(),
+    'currency': measure_context_currency(),
+    'clarity': measure_context_clarity()
+}
+
+def monitor_context_quality(context_usage):
+    """Monitor and report context quality metrics"""
+    metrics = calculate_quality_metrics(context_usage)
+
+    if metrics['overall_score'] < 0.8:
+        trigger_quality_improvement(metrics)
+
+    return metrics
+```
+
+## Advanced Context Techniques
+
+### Context Prediction and Prefetching
+
+#### Predictive Context Loading
+**Pattern Recognition**:
+- Identify common task sequences
+- Predict likely next context needs
+- Prefetch related information proactively
+
+**Implementation**:
+```python
+def predict_context_needs(current_task, task_history):
+    """Predict what context will be needed next"""
+    patterns = analyze_task_patterns(task_history)
+    predictions = {}
+
+    for pattern in patterns:
+        if pattern.matches(current_task):
+            predictions.update(pattern.predict_next_context())
+
+    return prefetch_predicted_context(predictions)
+```
+
+#### Context Hotspots
+**Frequently Accessed Context**:
+- Core business logic modules
+- Common utility functions
+- Standard design patterns
+- Frequently modified configuration
+
+**Hotspot Management**:
+- Maintain optimized access paths
+- Cache frequently used context sections
+- Provide quick access shortcuts
+- Monitor access patterns for optimization
+
+### Context Adaptation Strategies
+
+#### Task-Specific Context Adaptation
+**Simple Tasks**: Minimal, focused context
+**Complex Tasks**: Comprehensive, multi-file context
+**Exploratory Tasks**: Broad, discovery-oriented context
+**Optimization Tasks**: Performance-focused, metrics-heavy context
+
+**Adaptation Logic**:
+```python
+def adapt_context_to_task(task_complexity, task_type, user_expertise):
+    """Adapt context strategy based on task characteristics"""
+    base_strategy = select_base_strategy(task_type)
+
+    adaptations = {
+        'complexity_modifier': adjust_for_complexity(task_complexity),
+        'type_modifier': adjust_for_task_type(task_type),
+        'expertise_modifier': adjust_for_user_expertise(user_expertise)
+    }
+
+    return apply_adaptations(base_strategy, adaptations)
+```
+
+### Context Collaboration Patterns
+
+#### Multi-Role Context Sharing
+**Role-Specific Context Views**:
+- **Expert Developer**: Implementation-focused context
+- **QA Manager**: Testing and validation context
+- **LeadTechnicalWriter**: Documentation and planning context
+
+**Context Synchronization**:
+- Shared context repositories
+- Real-time context updates
+- Collaborative context curation
+- Cross-role context validation
+
+#### Context Evolution Tracking
+**Context Change Management**:
+- Track context modifications over time
+- Version control for context states
+- Impact analysis for context changes
+- Context optimization recommendations
+
+## Performance Optimization
+
+### Context Loading Performance
+
+#### Loading Strategies
+**Lazy Loading**: Load context on-demand
+**Eager Loading**: Pre-load predicted context
+**Progressive Loading**: Load context in stages
+**Selective Loading**: Load only relevant sections
+
+**Performance Monitoring**:
+```python
+CONTEXT_PERFORMANCE_METRICS = {
+    'load_time': measure_context_load_time(),
+    'token_efficiency': measure_token_utilization(),
+    'relevance_accuracy': measure_context_relevance(),
+    'user_satisfaction': measure_user_feedback()
+}
+
+def optimize_context_performance(metrics):
+    """Optimize context loading based on performance metrics"""
+    if metrics['load_time'] > threshold:
+        implement_lazy_loading()
+    if metrics['token_efficiency'] < threshold:
+        improve_context_compression()
+    if metrics['relevance_accuracy'] < threshold:
+        enhance_relevance_filtering()
+
+    return optimized_strategy
+```
+
+### Memory and Resource Management
+
+#### Context Memory Limits
+**Per-Session Limits**:
+- Maximum context size per session
+- Context retention policies
+- Automatic cleanup procedures
+- Memory usage monitoring
+
+**Resource Optimization**:
+- Context compression algorithms
+- Intelligent caching strategies
+- Background context processing
+- Resource usage monitoring and limits
+
+## Continuous Context Improvement
+
+### Learning from Context Usage
+
+#### Usage Pattern Analysis
+**Success Patterns**:
+- Identify context configurations that led to successful outcomes
+- Learn optimal context sizes for different task types
+- Discover effective context organization patterns
+- Recognize productive context reuse opportunities
+
+**Failure Analysis**:
+- Identify context issues that caused task failures
+- Learn from context overload situations
+- Recognize missing context problems
+- Improve context validation procedures
+
+### Context System Evolution
+
+#### Automated Improvements
+**Machine Learning Integration**:
+- Learn optimal context configurations
+- Predict context needs based on task patterns
+- Automate context optimization
+- Provide context recommendations
+
+**Feedback Integration**:
+- User feedback on context quality
+- Task success rate correlation
+- Performance metric tracking
+- Continuous improvement cycles
+
+### Quality Assurance and Validation
+
+#### Context Testing
+**Automated Testing**:
+- Context loading accuracy tests
+- Relevance assessment validation
+- Performance benchmark testing
+- Integration testing across roles
+
+**Manual Validation**:
+- Expert review of context quality
+- User experience testing
+- Comparative analysis with alternatives
+- Long-term effectiveness studies
+
+This comprehensive context management system ensures optimal information flow while maintaining efficiency and relevance across all agent operations and role interactions.

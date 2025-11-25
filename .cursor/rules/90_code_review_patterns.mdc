@@ -1,0 +1,719 @@
+---
+alwaysApply: true
+---
+# Code Review and Quality Assurance Patterns
+
+## Overview
+
+This rule defines comprehensive code review patterns and quality assurance processes. Code reviews are systematic examinations of code changes to ensure quality, security, performance, and maintainability standards are met.
+
+## Code Review Framework
+
+### Review Preparation Phase
+
+**Pre-Review Checklist**:
+- [ ] **Code Completeness**: All planned changes are implemented
+- [ ] **Test Coverage**: Unit tests pass and cover new functionality
+- [ ] **Documentation**: Code is documented and readable
+- [ ] **Self-Review**: Author has reviewed their own code
+- [ ] **Context Provided**: Clear description of changes and rationale
+
+**Review Readiness Assessment**:
+```python
+def assess_review_readiness(pull_request, codebase_context):
+    """Assess if code is ready for review"""
+
+    readiness_checks = {
+        'completeness': check_implementation_completeness(pull_request),
+        'testing': verify_test_coverage(pull_request),
+        'documentation': assess_documentation_quality(pull_request),
+        'code_quality': evaluate_code_quality_metrics(pull_request),
+        'security_scan': perform_automated_security_scan(pull_request)
+    }
+
+    overall_readiness = calculate_readiness_score(readiness_checks)
+
+    if overall_readiness < 0.8:
+        return {
+            'ready': False,
+            'issues': identify_readiness_blockers(readiness_checks),
+            'recommendations': generate_readiness_improvements(readiness_checks)
+        }
+
+    return {'ready': True, 'confidence_score': overall_readiness}
+```
+
+### Systematic Review Process
+
+#### Phase 1: Automated Analysis
+**Automated Quality Gates**:
+```python
+AUTOMATED_REVIEW_GATES = {
+    'syntax_validation': {
+        'tools': ['flake8', 'mypy', 'black'],
+        'criteria': 'zero_errors',
+        'blocking': True
+    },
+    'security_scanning': {
+        'tools': ['bandit', 'safety'],
+        'criteria': 'no_high_severity_issues',
+        'blocking': True
+    },
+    'test_execution': {
+        'tools': ['pytest', 'coverage'],
+        'criteria': 'tests_pass_coverage_80',
+        'blocking': True
+    },
+    'performance_benchmarks': {
+        'tools': ['pytest-benchmark'],
+        'criteria': 'no_performance_regression',
+        'blocking': False
+    },
+    'dependency_analysis': {
+        'tools': ['safety', 'pip-audit'],
+        'criteria': 'no_vulnerable_dependencies',
+        'blocking': True
+    }
+}
+
+def execute_automated_review_gates(changes, codebase):
+    """Execute automated quality gates before manual review"""
+
+    gate_results = {}
+
+    for gate_name, gate_config in AUTOMATED_REVIEW_GATES.items():
+        try:
+            result = execute_quality_gate(gate_config, changes, codebase)
+            gate_results[gate_name] = {
+                'status': 'passed' if result['success'] else 'failed',
+                'details': result,
+                'blocking': gate_config['blocking']
+            }
+        except Exception as e:
+            gate_results[gate_name] = {
+                'status': 'error',
+                'error': str(e),
+                'blocking': gate_config['blocking']
+            }
+
+    # Determine overall gate status
+    overall_status = determine_overall_gate_status(gate_results)
+
+    return {
+        'results': gate_results,
+        'overall_status': overall_status,
+        'recommendations': generate_gate_failure_recommendations(gate_results)
+    }
+```
+
+#### Phase 2: Manual Review Categories
+
+**Review Categories and Focus Areas**:
+```python
+REVIEW_CATEGORIES = {
+    'code_quality': {
+        'focus_areas': [
+            'readability', 'maintainability', 'consistency',
+            'naming_conventions', 'code_structure'
+        ],
+        'reviewer_expertise': 'intermediate',
+        'time_allocation': 0.3  # 30% of review time
+    },
+    'functionality': {
+        'focus_areas': [
+            'requirements_compliance', 'logic_correctness',
+            'edge_case_handling', 'error_handling'
+        ],
+        'reviewer_expertise': 'domain_expert',
+        'time_allocation': 0.25  # 25% of review time
+    },
+    'security': {
+        'focus_areas': [
+            'input_validation', 'authentication_authorization',
+            'data_protection', 'secure_coding_practices'
+        ],
+        'reviewer_expertise': 'security_specialist',
+        'time_allocation': 0.2  # 20% of review time
+    },
+    'performance': {
+        'focus_areas': [
+            'algorithm_efficiency', 'resource_usage',
+            'scalability', 'bottleneck_identification'
+        ],
+        'reviewer_expertise': 'performance_engineer',
+        'time_allocation': 0.15  # 15% of review time
+    },
+    'architecture': {
+        'focus_areas': [
+            'design_patterns', 'system_boundaries',
+            'coupling_cohesion', 'future_extensibility'
+        ],
+        'reviewer_expertise': 'architect',
+        'time_allocation': 0.1  # 10% of review time
+    }
+}
+
+def allocate_review_resources(review_categories, reviewer_availability, change_complexity):
+    """Allocate review resources based on change characteristics"""
+
+    # Calculate required review time
+    total_review_time = estimate_review_time(change_complexity)
+
+    # Allocate time by category
+    time_allocation = allocate_time_by_category(
+        REVIEW_CATEGORIES, total_review_time
+    )
+
+    # Assign reviewers based on expertise requirements
+    reviewer_assignment = assign_reviewers_by_expertise(
+        REVIEW_CATEGORIES, reviewer_availability
+    )
+
+    # Schedule review sessions
+    review_schedule = schedule_review_sessions(
+        time_allocation, reviewer_assignment
+    )
+
+    return {
+        'time_allocation': time_allocation,
+        'reviewer_assignment': reviewer_assignment,
+        'schedule': review_schedule,
+        'estimated_completion': calculate_review_completion_time(review_schedule)
+    }
+```
+
+## Detailed Review Guidelines
+
+### Code Quality Review
+
+**Readability Assessment**:
+- [ ] **Variable Names**: Descriptive and meaningful names
+- [ ] **Function Length**: Functions under 50 lines, classes under 300 lines
+- [ ] **Comment Quality**: Comments explain why, not what
+- [ ] **Code Structure**: Logical organization and flow
+- [ ] **Consistency**: Follows project conventions
+
+**Maintainability Review**:
+- [ ] **Single Responsibility**: Each function/class has one purpose
+- [ ] **Dependency Injection**: Proper dependency management
+- [ ] **Configuration**: Externalized configuration values
+- [ ] **Error Handling**: Comprehensive error handling patterns
+- [ ] **Testing**: Testable code structure
+
+**Quality Metrics**:
+```python
+CODE_QUALITY_METRICS = {
+    'cyclomatic_complexity': {'max': 10, 'warning': 7},
+    'maintainability_index': {'min': 70, 'warning': 60},
+    'duplicate_code_percentage': {'max': 5, 'warning': 3},
+    'test_coverage': {'min': 80, 'warning': 70},
+    'documentation_coverage': {'min': 90, 'warning': 80}
+}
+
+def assess_code_quality_metrics(codebase, changes):
+    """Assess code quality using objective metrics"""
+
+    metrics_results = {}
+
+    for metric_name, thresholds in CODE_QUALITY_METRICS.items():
+        metric_value = calculate_metric(metric_name, codebase, changes)
+
+        status = determine_metric_status(metric_value, thresholds)
+
+        metrics_results[metric_name] = {
+            'value': metric_value,
+            'thresholds': thresholds,
+            'status': status,
+            'recommendations': generate_metric_recommendations(
+                metric_name, metric_value, thresholds
+            )
+        }
+
+    overall_quality_score = calculate_overall_quality_score(metrics_results)
+
+    return {
+        'metrics': metrics_results,
+        'overall_score': overall_quality_score,
+        'quality_assessment': assess_overall_quality(overall_quality_score)
+    }
+```
+
+### Security Review
+
+**Input Validation Review**:
+- [ ] **Sanitization**: All inputs are properly sanitized
+- [ ] **Type Checking**: Input types are validated
+- [ ] **Length Limits**: Input length restrictions enforced
+- [ ] **Format Validation**: Proper format validation for structured inputs
+- [ ] **Business Rules**: Business rule validation implemented
+
+**Authentication & Authorization Review**:
+- [ ] **Session Management**: Secure session handling
+- [ ] **Token Security**: Proper JWT handling and validation
+- [ ] **Role-Based Access**: RBAC implementation correct
+- [ ] **Permission Checks**: Proper authorization checks
+- [ ] **Secure Defaults**: Secure default configurations
+
+**Data Protection Review**:
+- [ ] **Encryption**: Sensitive data is encrypted at rest and in transit
+- [ ] **Data Masking**: Sensitive data is masked in logs
+- [ ] **SQL Injection**: Parameterized queries used
+- [ ] **XSS Prevention**: Proper output encoding
+- [ ] **CSRF Protection**: CSRF tokens implemented
+
+**CWE Checklist Integration**:
+```python
+CWE_REVIEW_CHECKLIST = {
+    'CWE-79': {  # Cross-Site Scripting
+        'check': 'validate_output_encoding',
+        'severity': 'high',
+        'automated': True
+    },
+    'CWE-89': {  # SQL Injection
+        'check': 'validate_parameterized_queries',
+        'severity': 'critical',
+        'automated': True
+    },
+    'CWE-306': {  # Missing Authentication
+        'check': 'validate_authentication_mechanisms',
+        'severity': 'high',
+        'automated': False
+    },
+    'CWE-327': {  # Weak Cryptography
+        'check': 'validate_crypto_implementations',
+        'severity': 'medium',
+        'automated': True
+    },
+    'CWE-732': {  # Incorrect Permission Assignment
+        'check': 'validate_file_permissions',
+        'severity': 'medium',
+        'automated': False
+    }
+}
+
+def perform_cwe_security_review(code_changes, codebase_context):
+    """Perform comprehensive CWE-based security review"""
+
+    security_findings = {}
+
+    for cwe_id, cwe_config in CWE_REVIEW_CHECKLIST.items():
+        finding = execute_cwe_check(cwe_id, cwe_config, code_changes, codebase_context)
+
+        if finding['issues_found']:
+            security_findings[cwe_id] = {
+                'severity': cwe_config['severity'],
+                'issues': finding['issues'],
+                'recommendations': finding['recommendations'],
+                'automated': cwe_config['automated']
+            }
+
+    # Calculate overall security score
+    security_score = calculate_security_score(security_findings)
+
+    # Generate security report
+    security_report = generate_security_report(security_findings, security_score)
+
+    return {
+        'findings': security_findings,
+        'score': security_score,
+        'report': security_report,
+        'approval_required': security_score < 0.9  # Require manual review for low scores
+    }
+```
+
+### Performance Review
+
+**Algorithm Efficiency Review**:
+- [ ] **Time Complexity**: Appropriate O(n) complexity for algorithms
+- [ ] **Space Complexity**: Memory usage is optimized
+- [ ] **Scalability**: Code scales with data size
+- [ ] **Caching**: Appropriate caching strategies implemented
+- [ ] **Lazy Loading**: Resources loaded efficiently
+
+**Resource Usage Review**:
+- [ ] **Memory Management**: No memory leaks or excessive usage
+- [ ] **CPU Optimization**: CPU-intensive operations optimized
+- [ ] **I/O Efficiency**: File and network operations optimized
+- [ ] **Database Queries**: Efficient query patterns
+- [ ] **Connection Pooling**: Proper resource pooling
+
+**Performance Benchmarking**:
+```python
+PERFORMANCE_BENCHMARKS = {
+    'response_time': {
+        'api_endpoints': '< 200ms p95',
+        'database_queries': '< 50ms p95',
+        'file_operations': '< 10ms p95'
+    },
+    'throughput': {
+        'requests_per_second': '> 1000 rps',
+        'concurrent_users': '> 1000 concurrent',
+        'data_processing': '> 100 MB/s'
+    },
+    'resource_usage': {
+        'memory_per_request': '< 10MB',
+        'cpu_per_request': '< 5% single core',
+        'disk_io': '< 1MB per minute'
+    }
+}
+
+def conduct_performance_review(code_changes, performance_baselines):
+    """Conduct comprehensive performance review"""
+
+    # Execute performance benchmarks
+    benchmark_results = execute_performance_benchmarks(
+        code_changes, PERFORMANCE_BENCHMARKS
+    )
+
+    # Analyze performance impact
+    performance_analysis = analyze_performance_impact(
+        benchmark_results, performance_baselines
+    )
+
+    # Identify bottlenecks
+    bottleneck_analysis = identify_performance_bottlenecks(
+        benchmark_results, code_changes
+    )
+
+    # Generate optimization recommendations
+    optimization_recommendations = generate_performance_recommendations(
+        performance_analysis, bottleneck_analysis
+    )
+
+    return {
+        'benchmark_results': benchmark_results,
+        'performance_analysis': performance_analysis,
+        'bottlenecks': bottleneck_analysis,
+        'recommendations': optimization_recommendations,
+        'approval_status': determine_performance_approval(benchmark_results)
+    }
+```
+
+### Architecture Review
+
+**Design Pattern Review**:
+- [ ] **Pattern Selection**: Appropriate patterns for the problem
+- [ ] **Pattern Implementation**: Correct pattern implementation
+- [ ] **Pattern Consistency**: Consistent pattern usage across codebase
+- [ ] **Pattern Evolution**: Patterns support future changes
+- [ ] **Pattern Documentation**: Patterns are documented
+
+**System Boundaries Review**:
+- [ ] **Module Coupling**: Appropriate coupling between modules
+- [ ] **Interface Design**: Clean and stable interfaces
+- [ ] **Dependency Direction**: Dependencies point in correct direction
+- [ ] **Abstraction Levels**: Proper abstraction layering
+- [ ] **Encapsulation**: Proper encapsulation of implementation details
+
+**Scalability Assessment**:
+```python
+ARCHITECTURAL_SCALABILITY_CHECKLIST = {
+    'horizontal_scaling': {
+        'stateless_design': 'Application can be horizontally scaled',
+        'session_management': 'Sessions properly managed for scaling',
+        'load_distribution': 'Load balancing properly configured',
+        'data_consistency': 'Data consistency maintained across instances'
+    },
+    'vertical_scaling': {
+        'resource_limits': 'Resource limits properly configured',
+        'performance_monitoring': 'Performance monitoring in place',
+        'optimization_opportunities': 'Performance optimization implemented',
+        'bottleneck_identification': 'System bottlenecks identified'
+    },
+    'data_scaling': {
+        'database_sharding': 'Database properly sharded if needed',
+        'read_replicas': 'Read replicas configured for read-heavy loads',
+        'caching_strategy': 'Appropriate caching strategy implemented',
+        'data_partitioning': 'Data properly partitioned for scale'
+    }
+}
+
+def perform_architecture_scalability_review(system_design, scaling_requirements):
+    """Review system architecture for scalability concerns"""
+
+    scalability_assessment = {}
+
+    for scaling_dimension, checks in ARCHITECTURAL_SCALABILITY_CHECKLIST.items():
+        dimension_assessment = {}
+
+        for check_name, check_description in checks.items():
+            assessment_result = evaluate_scalability_check(
+                check_name, check_description, system_design, scaling_requirements
+            )
+
+            dimension_assessment[check_name] = {
+                'description': check_description,
+                'assessment': assessment_result,
+                'recommendations': generate_scalability_recommendations(
+                    check_name, assessment_result
+                )
+            }
+
+        scalability_assessment[scaling_dimension] = {
+            'checks': dimension_assessment,
+            'overall_score': calculate_dimension_score(dimension_assessment),
+            'critical_issues': identify_critical_scalability_issues(dimension_assessment)
+        }
+
+    overall_scalability_score = calculate_overall_scalability_score(scalability_assessment)
+
+    return {
+        'assessment': scalability_assessment,
+        'overall_score': overall_scalability_score,
+        'scalability_readiness': assess_scalability_readiness(overall_scalability_score),
+        'improvement_plan': generate_scalability_improvement_plan(scalability_assessment)
+    }
+```
+
+## Diff Analysis and Change Review
+
+### Systematic Diff Analysis
+
+**Diff Analysis Framework**:
+```python
+DIFF_ANALYSIS_FRAMEWORK = {
+    'change_categorization': {
+        'additions': 'New functionality or features',
+        'modifications': 'Existing code changes',
+        'deletions': 'Code removal or cleanup',
+        'refactoring': 'Structure improvements without functionality changes'
+    },
+    'impact_assessment': {
+        'scope': 'Number of files and lines affected',
+        'complexity': 'Change complexity and risk level',
+        'dependencies': 'Other components affected by changes',
+        'testing_requirements': 'Additional testing needed'
+    },
+    'quality_indicators': {
+        'consistency': 'Changes follow established patterns',
+        'completeness': 'All related changes included',
+        'safety': 'Changes minimize risk of breakage',
+        'documentation': 'Changes are properly documented'
+    }
+}
+
+def analyze_code_diff(diff_content, codebase_context):
+    """Perform comprehensive diff analysis"""
+
+    # Parse diff content
+    parsed_diff = parse_diff_content(diff_content)
+
+    # Categorize changes
+    change_categorization = categorize_changes(parsed_diff)
+
+    # Assess impact
+    impact_assessment = assess_change_impact(
+        parsed_diff, change_categorization, codebase_context
+    )
+
+    # Evaluate quality indicators
+    quality_assessment = evaluate_change_quality(
+        parsed_diff, change_categorization, impact_assessment
+    )
+
+    # Generate review recommendations
+    review_recommendations = generate_diff_review_recommendations(
+        change_categorization, impact_assessment, quality_assessment
+    )
+
+    return {
+        'categorization': change_categorization,
+        'impact': impact_assessment,
+        'quality': quality_assessment,
+        'recommendations': review_recommendations,
+        'review_priority': determine_review_priority(impact_assessment, quality_assessment)
+    }
+```
+
+### Change Risk Assessment
+
+**Risk Assessment Matrix**:
+```python
+CHANGE_RISK_MATRIX = {
+    'low_risk': {
+        'criteria': [
+            'single_file_change',
+            'no_external_dependencies',
+            'well_tested_code_path',
+            'cosmetic_changes_only'
+        ],
+        'review_depth': 'light_review',
+        'approval_required': 'peer_review'
+    },
+    'medium_risk': {
+        'criteria': [
+            'multiple_file_changes',
+            'api_interface_changes',
+            'database_schema_changes',
+            'configuration_changes'
+        ],
+        'review_depth': 'standard_review',
+        'approval_required': 'senior_developer'
+    },
+    'high_risk': {
+        'criteria': [
+            'core_system_changes',
+            'security_related_changes',
+            'performance_critical_changes',
+            'breaking_api_changes'
+        ],
+        'review_depth': 'comprehensive_review',
+        'approval_required': 'architect_review'
+    },
+    'critical_risk': {
+        'criteria': [
+            'authentication_system_changes',
+            'data_integrity_changes',
+            'production_hotfix',
+            'infrastructure_changes'
+        ],
+        'review_depth': 'multi_expert_review',
+        'approval_required': 'security_team_approval'
+    }
+}
+
+def assess_change_risk(change_analysis, codebase_context, business_impact):
+    """Assess risk level of code changes"""
+
+    # Evaluate against risk criteria
+    risk_scores = {}
+
+    for risk_level, risk_config in CHANGE_RISK_MATRIX.items():
+        score = calculate_risk_score(
+            change_analysis, risk_config['criteria'], codebase_context, business_impact
+        )
+        risk_scores[risk_level] = score
+
+    # Determine dominant risk level
+    dominant_risk = determine_dominant_risk_level(risk_scores)
+
+    # Generate risk mitigation plan
+    mitigation_plan = generate_risk_mitigation_plan(
+        dominant_risk, risk_scores, change_analysis
+    )
+
+    return {
+        'risk_level': dominant_risk,
+        'risk_scores': risk_scores,
+        'mitigation_plan': mitigation_plan,
+        'required_reviews': determine_required_reviews(dominant_risk),
+        'timeline_impact': assess_timeline_impact(dominant_risk, change_analysis)
+    }
+```
+
+## Review Workflow and Collaboration
+
+### Collaborative Review Process
+
+**Review Assignment Strategy**:
+```python
+def assign_code_reviewers(change_details, team_availability, expertise_matrix):
+    """Assign optimal reviewers based on change characteristics"""
+
+    # Identify required expertise areas
+    required_expertise = identify_required_expertise(change_details)
+
+    # Find available reviewers with matching expertise
+    available_reviewers = find_available_reviewers(
+        team_availability, required_expertise, expertise_matrix
+    )
+
+    # Calculate reviewer workload balance
+    workload_balance = calculate_workload_balance(available_reviewers)
+
+    # Optimize reviewer assignment
+    optimal_assignment = optimize_reviewer_assignment(
+        available_reviewers, required_expertise, workload_balance
+    )
+
+    # Schedule review sessions
+    review_schedule = schedule_review_sessions(optimal_assignment)
+
+    return {
+        'assignment': optimal_assignment,
+        'schedule': review_schedule,
+        'expertise_coverage': calculate_expertise_coverage(optimal_assignment, required_expertise),
+        'workload_distribution': workload_balance
+    }
+```
+
+### Review Feedback Integration
+
+**Feedback Processing Framework**:
+```python
+def process_review_feedback(review_comments, code_changes, author_response):
+    """Process and integrate review feedback"""
+
+    # Categorize feedback
+    categorized_feedback = categorize_review_comments(review_comments)
+
+    # Assess feedback validity
+    feedback_validation = validate_review_feedback(
+        categorized_feedback, code_changes
+    )
+
+    # Prioritize feedback items
+    prioritized_feedback = prioritize_feedback_items(
+        feedback_validation, code_changes
+    )
+
+    # Generate implementation plan
+    implementation_plan = create_feedback_implementation_plan(
+        prioritized_feedback, author_response
+    )
+
+    # Track feedback resolution
+    resolution_tracking = initialize_feedback_tracking(
+        prioritized_feedback, implementation_plan
+    )
+
+    return {
+        'categorized_feedback': categorized_feedback,
+        'validation': feedback_validation,
+        'prioritized_items': prioritized_feedback,
+        'implementation_plan': implementation_plan,
+        'tracking': resolution_tracking
+    }
+```
+
+### Review Quality Assurance
+
+**Review Effectiveness Metrics**:
+```python
+REVIEW_QUALITY_METRICS = {
+    'defect_detection_rate': 'Percentage of defects found during review',
+    'review_coverage': 'Percentage of code paths reviewed',
+    'review_thoroughness': 'Depth of review analysis',
+    'false_positive_rate': 'Percentage of incorrect review comments',
+    'review_cycle_time': 'Time from submission to approval',
+    'reviewer_satisfaction': 'Reviewer experience and satisfaction',
+    'author_satisfaction': 'Author experience and learning'
+}
+
+def measure_review_effectiveness(review_process, outcomes):
+    """Measure the effectiveness of the review process"""
+
+    effectiveness_scores = {}
+
+    for metric_name in REVIEW_QUALITY_METRICS.keys():
+        score = calculate_review_metric(
+            metric_name, review_process, outcomes
+        )
+        effectiveness_scores[metric_name] = {
+            'score': score,
+            'benchmark': get_metric_benchmark(metric_name),
+            'status': determine_metric_status(score, metric_name),
+            'improvement_actions': generate_metric_improvements(metric_name, score)
+        }
+
+    overall_effectiveness = calculate_overall_effectiveness(effectiveness_scores)
+
+    return {
+        'metrics': effectiveness_scores,
+        'overall_score': overall_effectiveness,
+        'effectiveness_assessment': assess_review_effectiveness(overall_effectiveness),
+        'improvement_plan': generate_review_improvement_plan(effectiveness_scores)
+    }
+```
+
+This comprehensive code review framework ensures systematic, thorough, and collaborative review processes that maintain code quality, security, and performance standards across all development activities.

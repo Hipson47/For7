@@ -1,0 +1,566 @@
+---
+alwaysApply: true
+---
+
+# Full Stack Best Practices - Technology and Architecture Patterns
+
+## Backend Engineering Patterns (from Backend.md)
+
+### Architectural Foundations
+
+#### Modular Monolith Pattern
+**When to Use**: Teams under 10 developers, evolutionary architecture, need for rapid development
+**Key Principles**:
+- Single deployed application with well-separated modules
+- In-process function calls between modules (faster than microservices)
+- Clear boundaries with enforced separation
+- Evolutionary path to microservices when needed
+
+**Implementation in Python/FastAPI**:
+```python
+# Clean module separation
+src/
+├── app/
+│   ├── users/          # User management module
+│   ├── orders/         # Order processing module
+│   └── payments/       # Payment processing module
+├── domain/             # Shared domain models
+├── infra/              # Infrastructure concerns
+└── main.py            # Application entry point
+```
+
+**DDD Integration**:
+- Bounded Contexts per module
+- Avoid direct database relations between modules
+- Use public interfaces for cross-module communication
+- Shared kernel for common domain concepts
+
+#### Microservices Decision Framework
+**When to Scale**: Teams >10 developers, divergent scaling needs, organizational complexity
+**Migration Triggers**:
+- Specific module needs different scaling than others
+- Independent deployment cadence required
+- Separate team ownership needed
+- Technology stack divergence
+
+**Service Mesh Evolution**:
+- Prefer sidecar-less meshes (Istio ambient mesh)
+- Reduce resource overhead and complexity
+- Enable mutual TLS, load balancing, observability
+- Support for service discovery and traffic management
+
+### Event-Driven Architecture (EDA)
+
+#### Topology Patterns
+**Broker Topology**:
+- Central message broker (Kafka, RabbitMQ)
+- Components publish/subscribe to events
+- Loose coupling, high scalability
+- Complex error handling and transaction management
+
+**Mediator Topology**:
+- Central event mediator orchestrates flow
+- Controlled event routing and state management
+- Simplified error handling
+- Potential single point of failure
+
+**Implementation Example (Python/async)**:
+```python
+# Event mediator pattern
+class EventMediator:
+    def __init__(self):
+        self.handlers = defaultdict(list)
+
+    async def publish(self, event: Event):
+        for handler in self.handlers[type(event)]:
+            await handler.handle(event)
+
+    def subscribe(self, event_type: Type[Event], handler: EventHandler):
+        self.handlers[event_type].append(handler)
+```
+
+#### Broker vs Mediator Decision
+- **Broker**: Complex domains, high throughput, eventual consistency
+- **Mediator**: Orchestrated workflows, strict consistency, simpler debugging
+- **Hybrid**: Combine both patterns based on use case requirements
+
+### Serverless Evolution
+
+#### FaaS Best Practices
+**Large Payload Handling**:
+- AWS Lambda: Increased streaming payload limit to 200MB
+- Support for large datasets and AI-generated content
+- Eliminate complex workarounds with S3 intermediaries
+
+**AI Workload Optimization**:
+- GPU support in serverless (Google Cloud Run)
+- Unpredictable demand handling for AI/ML workloads
+- Cost-effective for sporadic, compute-intensive tasks
+
+#### Serverless Database Patterns
+**Auto-scaling Databases**:
+- Amazon Aurora DSQL: PostgreSQL-compatible, distributed
+- Designed for "sophisticated AI agents" with unpredictable workflows
+- True scale-to-zero capabilities vs auto-scaling illusions
+
+**Framework Selection**:
+- **AWS SAM**: AWS ecosystem integration, CloudFormation extension
+- **Serverless Framework**: Cloud-agnostic, multi-provider support
+- **Terraform**: Infrastructure-as-Code, complex multi-cloud environments
+
+## Docker and Containerization Patterns
+
+### Multi-Stage Build Optimization
+**Builder Pattern**:
+```dockerfile
+# Build stage
+FROM python:3.11-slim AS builder
+RUN apt-get update && apt-get install -y build-essential gcc
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Production stage
+FROM gcr.io/distroless/python3-debian12:latest
+COPY --from=builder /opt/venv /opt/venv
+COPY ./src ./src
+CMD ["python", "-m", "src.main"]
+```
+
+**Benefits**:
+- Smaller final image size
+- Reduced attack surface
+- Faster deployment and startup
+- Separation of build and runtime dependencies
+
+### Security Hardening
+
+#### Distroless Images
+- **Minimal Attack Surface**: No shell, package managers, or unnecessary tools
+- **Google Distroless**: `gcr.io/distroless/python3-debian12:latest`
+- **Security Benefits**: Fewer CVEs, reduced privilege escalation vectors
+- **Trade-offs**: Debugging challenges, no shell access
+
+#### User and Permission Management
+```dockerfile
+# Non-root user
+RUN useradd --create-home --shell /bin/bash app
+RUN chown -R app:app /app
+USER app
+
+# Secure permissions
+RUN chmod 755 /app && chmod 644 /app/*.py
+```
+
+#### Security Best Practices
+- Use `.dockerignore` to exclude sensitive files
+- Scan images with Trivy or Snyk
+- Implement read-only root filesystem where possible
+- Use secrets management instead of environment variables for sensitive data
+
+### Health Checks and Monitoring
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8080/healthz')"
+```
+
+**Health Check Types**:
+- **Liveness**: Is the app running? (Kubernetes restart trigger)
+- **Readiness**: Can the app serve traffic? (Load balancer inclusion)
+- **Startup**: Has the app fully initialized? (Prevent premature termination)
+
+## Security Patterns and Best Practices
+
+### CWE Checklist Integration
+**Input Validation (CWE-20)**:
+- Validate all external inputs
+- Use type hints and Pydantic models
+- Implement proper sanitization
+- Reject invalid inputs early
+
+**Authentication & Authorization (CWE-306, CWE-862)**:
+- Implement proper JWT/session management
+- Use role-based access control (RBAC)
+- Validate tokens on each request
+- Implement secure password hashing (bcrypt/scrypt)
+
+**Injection Prevention (CWE-89, CWE-79)**:
+- Use ORMs (SQLAlchemy, Prisma) instead of raw SQL
+- Implement proper input sanitization
+- Use parameterized queries
+- Validate and escape HTML output
+
+**Secure Configuration (CWE-732, CWE-527)**:
+- Store secrets in secure locations (AWS Secrets Manager, HashiCorp Vault)
+- Use environment variables for configuration
+- Implement proper file permissions (chmod 600)
+- Rotate secrets regularly
+
+### Threat Modeling Integration
+**STRIDE Framework**:
+- **Spoofing**: Authentication mechanisms
+- **Tampering**: Data integrity checks
+- **Repudiation**: Audit logging
+- **Information Disclosure**: Encryption and access controls
+- **Denial of Service**: Rate limiting and resource management
+- **Elevation of Privilege**: Authorization checks
+
+## Performance Optimization Patterns
+
+### Caching Strategies
+**Application-Level Caching**:
+- Use Redis for distributed caching
+- Implement cache-aside pattern
+- Set appropriate TTL values
+- Handle cache invalidation properly
+
+**Database Optimization**:
+- Use database indexes strategically
+- Implement query optimization
+- Use connection pooling
+- Monitor slow queries
+
+### Async Programming Patterns
+**Python Async Best Practices**:
+- Use `async def` for I/O operations
+- Implement proper exception handling in async code
+- Use `asyncio.gather()` for concurrent operations
+- Avoid blocking operations in async contexts
+
+**Resource Management**:
+- Implement proper cleanup in `__aenter__`/`__aexit__`
+- Use context managers for resource handling
+- Monitor for resource leaks
+- Implement graceful shutdown procedures
+
+## Error Handling and Resilience
+
+### Circuit Breaker Pattern
+```python
+class CircuitBreaker:
+    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.state = CircuitState.CLOSED
+
+    async def call(self, func: Callable, *args, **kwargs):
+        if self.state == CircuitState.OPEN:
+            if self._should_attempt_reset():
+                self.state = CircuitState.HALF_OPEN
+            else:
+                raise CircuitBreakerError("Circuit is OPEN")
+
+        try:
+            result = await func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise
+```
+
+### Retry Strategies
+**Exponential Backoff**:
+- Implement jitter to prevent thundering herd
+- Set maximum retry attempts
+- Use appropriate backoff multipliers
+- Handle different error types differently
+
+### Graceful Degradation
+- Implement fallback mechanisms
+- Provide reduced functionality when dependencies fail
+- Communicate service status to users
+- Log degraded operations for monitoring
+
+## API Design Patterns
+
+### RESTful API Design
+**Resource-Based URLs**:
+- Use nouns, not verbs: `/users`, `/orders`
+- Implement proper HTTP methods: GET, POST, PUT, DELETE
+- Use plural resource names
+- Implement proper status codes
+
+**Versioning Strategies**:
+- URL versioning: `/api/v1/users`
+- Header versioning: `Accept: application/vnd.api+json; version=1`
+- Content negotiation for backward compatibility
+
+### GraphQL Considerations
+**When to Use GraphQL**:
+- Complex data requirements
+- Mobile applications with varying needs
+- Rapidly evolving APIs
+- Need for precise data fetching
+
+**Best Practices**:
+- Implement proper schema design
+- Use resolvers for data fetching
+- Implement query complexity limits
+- Provide proper error handling
+
+## Database Patterns
+
+### ORM Usage Guidelines
+**SQLAlchemy Best Practices**:
+- Use declarative base for model definitions
+- Implement proper relationships
+- Use sessions correctly (context managers)
+- Implement migrations with Alembic
+
+**Query Optimization**:
+- Use `selectinload` or `joinedload` for relationships
+- Implement pagination for large datasets
+- Use database indexes strategically
+- Monitor and optimize slow queries
+
+### Data Consistency
+**Transaction Management**:
+- Use database transactions for related operations
+- Implement proper rollback procedures
+- Handle deadlock scenarios
+- Use optimistic locking where appropriate
+
+## Testing Patterns Integration
+
+### Unit Testing Best Practices
+**pytest Patterns**:
+- Use descriptive test names: `test_<function>_<scenario>`
+- Implement fixtures for test data setup
+- Use parametrized tests for similar scenarios
+- Mock external dependencies
+
+**Coverage Requirements**:
+- Aim for 80%+ coverage on new code
+- Focus on critical paths and edge cases
+- Use coverage reports for visibility
+- Implement coverage gates in CI/CD
+
+### Integration Testing
+**API Testing with httpx**:
+```python
+import pytest
+from httpx import AsyncClient
+
+@pytest.mark.asyncio
+async def test_create_user(client: AsyncClient):
+    response = await client.post("/users", json={"name": "John"})
+    assert response.status_code == 201
+    data = response.json()
+    assert "id" in data
+    assert data["name"] == "John"
+```
+
+**Database Testing**:
+- Use test databases or transaction rollback
+- Implement proper test data factories
+- Test database constraints and relationships
+- Verify data consistency across operations
+
+## Infrastructure as Code
+
+### Docker Compose for Development
+```yaml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://user:pass@db:5432/app
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=app
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+
+  redis:
+    image: redis:7-alpine
+```
+
+### Environment Management
+**Development vs Production**:
+- Use different configurations for each environment
+- Implement proper secret management
+- Use environment-specific settings
+- Implement health checks for all environments
+
+## Monitoring and Observability
+
+### Structured Logging
+```python
+import structlog
+
+# Configure structured logging
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer(),
+    ],
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    cache_logger_on_first_use=True,
+)
+
+logger = structlog.get_logger()
+
+# Usage
+logger.info("user_created", user_id=user.id, email=user.email)
+```
+
+### Metrics Collection
+**Key Metrics to Monitor**:
+- Response times and throughput
+- Error rates and types
+- Resource utilization (CPU, memory, disk)
+- Database connection pools
+- Cache hit rates
+
+### Health Endpoints
+```python
+@app.get("/healthz")
+async def liveness_check():
+    """Kubernetes liveness probe - is the app running?"""
+    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+@app.get("/readiness")
+async def readiness_check():
+    """Kubernetes readiness probe - can the app serve traffic?"""
+    # Check external dependencies
+    checks = await perform_health_checks()
+    if all(checks.values()):
+        return {
+            "status": "ready",
+            "checks": checks,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    else:
+        raise HTTPException(status_code=503, detail="Service not ready")
+```
+
+## Deployment and Release Management
+
+### Blue-Green Deployment
+- Maintain two identical environments
+- Route traffic between blue and green
+- Test thoroughly before switching
+- Quick rollback capability
+
+### Canary Deployment
+- Roll out to subset of users first
+- Monitor metrics and error rates
+- Gradually increase traffic to new version
+- Rollback if issues detected
+
+### Feature Flags
+```python
+class FeatureFlags:
+    def __init__(self, flags_store):
+        self.flags_store = flags_store
+
+    def is_enabled(self, feature_name: str, user_id: str = None) -> bool:
+        # Check feature flag status
+        flag = self.flags_store.get(feature_name)
+        if not flag or not flag.enabled:
+            return False
+
+        # User-specific overrides
+        if user_id and user_id in flag.user_overrides:
+            return flag.user_overrides[user_id]
+
+        # Percentage rollout
+        if flag.percentage < 100:
+            return self._check_percentage_rollout(feature_name, user_id, flag.percentage)
+
+        return True
+```
+
+## Continuous Integration/Continuous Deployment (CI/CD)
+
+### Pipeline Best Practices
+**Automated Testing**:
+- Run unit tests on every commit
+- Execute integration tests in staging
+- Perform end-to-end tests before production
+- Implement smoke tests post-deployment
+
+**Quality Gates**:
+- Code coverage requirements
+- Security scanning (SAST, DAST, dependency scanning)
+- Performance benchmarks
+- Manual approval for production deployments
+
+### Deployment Automation
+**Infrastructure as Code**:
+- Use Terraform or CloudFormation for infrastructure
+- Implement immutable infrastructure
+- Use container orchestration (Kubernetes, ECS)
+- Automate deployment pipelines
+
+## Scalability Patterns
+
+### Horizontal Scaling
+- Implement stateless application design
+- Use load balancers for traffic distribution
+- Implement proper session management
+- Design for concurrent processing
+
+### Vertical Scaling Considerations
+- Monitor resource utilization
+- Implement proper resource limits
+- Use appropriate instance types
+- Plan for peak load scenarios
+
+### Caching Layer Design
+- Use Redis or Memcached for distributed caching
+- Implement cache warming strategies
+- Handle cache invalidation properly
+- Monitor cache hit rates and performance
+
+## Migration and Refactoring Patterns
+
+### Database Migration Best Practices
+**Alembic for SQLAlchemy**:
+```python
+# Migration script structure
+revision = '001'
+down_revision = None
+
+def upgrade():
+    op.create_table('users',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('name', sa.String(50), nullable=False),
+        sa.Column('email', sa.String(120), unique=True, nullable=False),
+    )
+
+def downgrade():
+    op.drop_table('users')
+```
+
+**Migration Safety**:
+- Test migrations on production-like data
+- Implement rollback procedures
+- Use feature flags for gradual rollout
+- Monitor performance impact of migrations
+
+### Application Refactoring
+**Incremental Refactoring**:
+- Make small, testable changes
+- Maintain backward compatibility
+- Update tests with each change
+- Refactor one component at a time
+
+**Architecture Evolution**:
+- Plan refactoring with clear success criteria
+- Implement monitoring for regression detection
+- Communicate changes to all stakeholders
+- Document lessons learned from refactoring

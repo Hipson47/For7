@@ -1,0 +1,319 @@
+---
+alwaysApply: true
+---
+# QA Manager Rules - Quality Assurance and Testing
+
+## Role Definition and Scope
+
+The QA Manager role is responsible for ensuring software quality through comprehensive testing strategies, bug prevention, and quality gate enforcement. This role automatically activates during testing activities and provides specialized testing expertise.
+
+## Core Responsibilities
+
+### Test Strategy Development
+- Define appropriate testing levels (unit, integration, e2e, smoke)
+- Establish testing priorities based on risk assessment
+- Design test automation frameworks and CI/CD integration
+- Maintain testing standards and best practices
+
+### Quality Assurance
+- Implement quality gates and coverage requirements
+- Perform code reviews with quality focus
+- Conduct root cause analysis for failures
+- Ensure compliance with security and performance standards
+
+### Bug Prevention and Learning
+- Analyze patterns from past issues (nauka.json integration)
+- Implement preventive measures based on lessons learned
+- Monitor code quality metrics and trends
+- Provide feedback to development team on quality improvements
+
+## Testing Strategy Framework
+
+### Unit Testing (pytest)
+**Scope:** Individual functions, methods, and classes
+**Coverage:** Minimum 80% for new code, 70% overall
+**Patterns:**
+- Use descriptive test names: `test_<function_name>_<scenario>`
+- Implement fixtures for common test data
+- Mock external dependencies (APIs, databases, file systems)
+- Test edge cases, error conditions, and boundary values
+
+**Best Practices:**
+- One assertion per test case
+- Arrange-Act-Assert pattern
+- Use parametrized tests for similar scenarios
+- Separate test data from test logic
+
+### Integration Testing
+**Scope:** Component interactions, API endpoints, database operations
+**Coverage:** Critical integration points and data flows
+**Patterns:**
+- Test async operations and error handling
+- Validate data consistency across components
+- Verify proper resource cleanup
+- Test authentication and authorization flows
+
+**Implementation:**
+- Use test databases or in-memory databases
+- Implement API client testing with httpx.AsyncClient
+- Test message queues and event-driven flows
+- Validate cross-service communication
+
+### End-to-End Testing
+**Scope:** Complete user workflows and business processes
+**Coverage:** Critical user journeys and high-risk scenarios
+**Patterns:**
+- Simulate real user interactions
+- Test complete request-response cycles
+- Validate data persistence and retrieval
+- Verify system integration points
+
+**Best Practices:**
+- Use realistic test data
+- Implement proper test isolation
+- Monitor for flaky tests and address root causes
+- Balance coverage with execution time
+
+### Smoke Testing
+**Scope:** Critical system functionality post-deployment
+**Coverage:** Core features that must work for system to be usable
+**Patterns:**
+- Test application startup and basic connectivity
+- Verify essential CRUD operations
+- Check critical user flows
+- Validate system health endpoints
+
+## nauka.json Integration - Learning from Past Issues
+
+### Pre-Test Workflow
+The QA Manager **MUST** consult `nauka.json` before any testing activity:
+
+1. **Read nauka.json**: Load all lessons and identify relevant patterns
+2. **Task Analysis**: Map current testing task to known issue categories
+3. **Risk Assessment**: Identify potential problems based on historical data
+4. **Prevention Application**: Apply preventive measures from relevant lessons
+
+### Lesson Categories and Prevention Strategies
+
+#### Import Errors (`ModuleNotFoundError`, `ImportError`)
+**Common Patterns:**
+- Incorrect import paths after refactoring
+- Missing dependencies in requirements.txt
+- Circular import issues
+- Case sensitivity in module names
+
+**Prevention Strategies:**
+- Always verify import paths after refactoring
+- Run import validation before committing
+- Use absolute imports consistently
+- Check import statements in related files
+
+#### Async Issues (`coroutine` errors, context issues)
+**Common Patterns:**
+- Calling async functions synchronously in `__init__`
+- Improper await usage in async contexts
+- Resource leaks in async operations
+- Context manager misuse
+
+**Prevention Strategies:**
+- Never call async functions in `__init__` methods
+- Use lazy loading for async dependencies
+- Implement proper async context managers
+- Test async operations with realistic scenarios
+
+#### Singleton Pattern Issues (Duplicate initialization)
+**Common Patterns:**
+- Multiple tool registry initializations
+- Database connection pool duplication
+- Cache manager reinitialization
+- Configuration object recreation
+
+**Prevention Strategies:**
+- Implement proper singleton patterns
+- Check for existing instances before initialization
+- Use factory functions for resource management
+- Implement idempotent initialization methods
+
+#### Model Attribute Errors (`AttributeError` on Pydantic models)
+**Common Patterns:**
+- Incorrect property names on model objects
+- Type confusion between different model types
+- Missing validation on model creation
+- API response structure changes
+
+**Prevention Strategies:**
+- Always check model definitions before usage
+- Use type hints and IDE autocomplete
+- Implement proper model validation
+- Test with realistic API response data
+
+#### Architecture Changes (Removing features, refactoring)
+**Common Patterns:**
+- Breaking changes without updating tests
+- Forgotten dependencies after feature removal
+- Configuration inconsistencies
+- Documentation becoming outdated
+
+**Prevention Strategies:**
+- Update tests immediately after architectural changes
+- Use grep to find all references before removal
+- Maintain backward compatibility where possible
+- Update documentation alongside code changes
+
+### Automatic Lesson Application
+
+**Before Test Execution:**
+```python
+# Pseudo-code for automatic lesson checking
+lessons = read_nauka_json()
+relevant_lessons = filter_by_current_task(lessons, current_test_context)
+for lesson in relevant_lessons:
+    apply_prevention_strategies(lesson)
+    validate_test_against_lesson(lesson)
+```
+
+**During Test Failure Analysis:**
+1. **Categorize Failure**: Map error to lesson categories
+2. **Historical Analysis**: Check if similar failure occurred before
+3. **Root Cause Matching**: Compare current failure to known patterns
+4. **Solution Application**: Apply known fixes from lessons
+5. **New Lesson Creation**: Document novel issues for future reference
+
+## Test Automation and CI/CD Integration
+
+### Automated Test Execution
+- **Pre-commit Hooks**: Run unit tests and linting
+- **CI Pipeline**: Execute full test suite on pull requests
+- **Deployment Gates**: Require test success for production deployment
+- **Nightly Builds**: Comprehensive testing on main branch
+
+### Coverage Requirements
+- **Unit Tests**: 80% minimum coverage for new features
+- **Integration Tests**: Cover all critical API endpoints and workflows
+- **E2E Tests**: Cover primary user journeys
+- **Mutation Testing**: Use mutation testing to validate test quality
+
+### Test Quality Metrics
+- **Test Execution Time**: Keep under 10 minutes for unit tests
+- **Flakiness Rate**: Maintain under 1% flaky test rate
+- **Coverage Trends**: Monitor coverage improvements over time
+- **Bug Detection Rate**: Track bugs found by automated vs manual testing
+
+## Code Review Guidelines
+
+### Quality Checklist
+- [ ] Type annotations present on all functions and methods
+- [ ] Error handling covers expected failure modes
+- [ ] Test coverage meets requirements
+- [ ] Security best practices followed (CWE checklist)
+- [ ] Performance considerations addressed
+- [ ] Documentation updated for API changes
+
+### Security Review
+- [ ] Input validation on all external inputs
+- [ ] Proper authentication and authorization
+- [ ] Secure handling of sensitive data
+- [ ] SQL injection prevention (ORM usage)
+- [ ] XSS prevention in web interfaces
+
+### Performance Review
+- [ ] No obvious algorithmic inefficiencies
+- [ ] Proper resource cleanup (connections, files, memory)
+- [ ] Caching implemented where beneficial
+- [ ] Database queries optimized
+- [ ] Async operations used appropriately
+
+## Failure Analysis and Root Cause Analysis
+
+### Systematic Debugging Approach
+1. **Reproduce Issue**: Create minimal test case to reproduce
+2. **Isolate Components**: Identify which component is failing
+3. **Check nauka.json**: Search for similar historical issues
+4. **Analyze Logs**: Review error logs and stack traces
+5. **Code Inspection**: Examine relevant code paths
+6. **Fix and Test**: Implement fix and validate with tests
+
+### Common Failure Patterns
+- **Test Data Issues**: Incorrect or outdated test data
+- **Environment Differences**: Local vs CI environment discrepancies
+- **Race Conditions**: Async operations interfering with each other
+- **Resource Leaks**: Unclosed connections or file handles
+- **Configuration Errors**: Environment-specific settings
+
+## Test Data Management
+
+### Test Data Strategies
+- **Factories**: Use factory functions for consistent test data creation
+- **Fixtures**: Implement reusable test fixtures for common scenarios
+- **Mocking**: Mock external dependencies to isolate unit tests
+- **Realistic Data**: Use realistic test data that reflects production usage
+
+### Data Isolation
+- **Database Sandboxing**: Use separate test databases
+- **Transaction Rollback**: Roll back changes after each test
+- **Cleanup Procedures**: Ensure proper cleanup of test resources
+- **Parallel Execution**: Design tests to run in parallel safely
+
+## Quality Metrics and Reporting
+
+### Key Performance Indicators (KPIs)
+- **Test Coverage**: Percentage of code covered by tests
+- **Test Execution Time**: Time to run full test suite
+- **Bug Detection Rate**: Bugs found per test execution
+- **False Positive Rate**: Invalid test failures
+- **Mean Time To Detect (MTTD)**: Time to detect issues
+- **Mean Time To Resolve (MTTR)**: Time to fix detected issues
+
+### Reporting Formats
+- **Test Results**: Detailed pass/fail with error messages
+- **Coverage Reports**: Line-by-line coverage visualization
+- **Trend Analysis**: Coverage and quality trends over time
+- **Risk Assessment**: Areas requiring additional testing
+
+## Continuous Quality Improvement
+
+### Learning and Adaptation
+- **Lesson Updates**: Add new lessons when encountering novel issues
+- **Pattern Recognition**: Identify recurring quality problems
+- **Process Optimization**: Refine testing processes based on experience
+- **Tool Evaluation**: Assess and improve testing tools and frameworks
+
+### Quality Gates Evolution
+- **Regular Review**: Review and update quality requirements
+- **Industry Benchmarks**: Compare against industry standards
+- **Team Feedback**: Incorporate team input on quality processes
+- **Technology Updates**: Adapt to new testing technologies and patterns
+
+## Integration with Development Workflow
+
+### Pull Request Quality Gates
+- [ ] All tests pass
+- [ ] Coverage requirements met
+- [ ] Code review completed
+- [ ] Security scan passed
+- [ ] Performance impact assessed
+
+### Deployment Readiness
+- [ ] Smoke tests pass in staging
+- [ ] Integration tests validate system components
+- [ ] Performance benchmarks met
+- [ ] Rollback plan documented
+- [ ] Monitoring alerts configured
+
+## Emergency Response
+
+### Critical Bug Handling
+1. **Immediate Assessment**: Evaluate impact and urgency
+2. **Isolation**: Contain the issue to prevent further damage
+3. **Root Cause Analysis**: Use systematic debugging approach
+4. **Fix Implementation**: Apply minimal, targeted fix
+5. **Validation**: Comprehensive testing of the fix
+6. **Documentation**: Update lessons and documentation
+
+### Service Degradation Response
+1. **Monitoring Alert**: Detect service degradation
+2. **Impact Assessment**: Evaluate user and business impact
+3. **Temporary Mitigation**: Implement temporary workarounds
+4. **Root Cause Investigation**: Full analysis of underlying issues
+5. **Permanent Fix**: Implement and validate comprehensive solution
+6. **Prevention**: Update monitoring and add preventive measures

@@ -1,0 +1,671 @@
+---
+alwaysApply: true
+---
+
+# Cost and Performance Optimization Strategies
+
+## Overview
+
+This rule defines comprehensive strategies for optimizing costs and performance in AI agent operations. The focus is on intelligent model selection, token efficiency, caching, and monitoring to maximize value while minimizing expenses.
+
+## Model Selection Framework
+
+### Task-Model Mapping Matrix
+
+Based on unified_cursor_agent_pack.json model matrix:
+
+```python
+MODEL_SELECTION_MATRIX = {
+    # Inline edits and small changes
+    'inline_edit': {
+        'model': 'seedream_v4_edit',
+        'temperature': 0.1,
+        'max_tokens': 1024,
+        'expected_cost': '~$0.01 per edit',
+        'latency': '1-2 seconds',
+        'use_case': 'Code formatting, variable renaming, small fixes'
+    },
+
+    # Multi-file refactoring and complex changes
+    'composer_refactor': {
+        'model': 'seedream_v4_edit',
+        'temperature': 0.2,
+        'max_tokens': 4096,
+        'expected_cost': '~$0.05 per operation',
+        'latency': '5-8 seconds',
+        'use_case': 'Class extraction, method refactoring, file restructuring'
+    },
+
+    # Analysis, testing, and complex reasoning
+    'analysis_testing': {
+        'model': 'gemini_25_flash_image_edit',
+        'temperature': 0.3,
+        'max_tokens': 8192,
+        'expected_cost': '~$0.10 per operation',
+        'latency': '8-12 seconds',
+        'use_case': 'Code review, test generation, bug analysis'
+    },
+
+    # Complex planning and high-level reasoning
+    'planning_reasoning': {
+        'model': 'gpt_5_claude_4_5',
+        'temperature': 0.2,
+        'max_tokens': 8192,
+        'expected_cost': '~$0.20+ per operation',
+        'latency': '10-15 seconds',
+        'use_case': 'Architecture design, complex planning, system analysis'
+    },
+
+    # Background processing and large operations
+    'background_processing': {
+        'model': 'seedream_v4_edit',
+        'temperature': 0.2,
+        'max_tokens': 8192,
+        'expected_cost': 'Variable based on duration',
+        'latency': 'Background (2x faster startup)',
+        'use_case': 'Large refactors, batch operations, long-running tasks'
+    }
+}
+
+def select_optimal_model(task_characteristics):
+    """Select the most cost-effective model for the task"""
+    task_complexity = assess_task_complexity(task_characteristics)
+    task_type = classify_task_type(task_characteristics)
+    cost_sensitivity = evaluate_cost_sensitivity(task_characteristics)
+
+    candidate_models = filter_models_by_capability(task_type, task_complexity)
+
+    if cost_sensitivity == 'high':
+        return select_minimum_cost_model(candidate_models)
+    elif cost_sensitivity == 'medium':
+        return select_balanced_model(candidate_models)
+    else:  # quality priority
+        return select_highest_quality_model(candidate_models)
+```
+
+### Dynamic Model Selection
+
+**Context-Aware Selection**:
+```python
+def select_model_dynamically(context, task_history, budget_constraints):
+    """Dynamically select model based on current context and constraints"""
+
+    # Analyze recent performance
+    recent_performance = analyze_recent_model_performance(task_history)
+
+    # Check budget constraints
+    budget_status = check_budget_status(budget_constraints)
+
+    # Consider context complexity
+    context_complexity = assess_context_complexity(context)
+
+    # Select optimal model
+    selected_model = optimize_model_selection(
+        performance_data=recent_performance,
+        budget_status=budget_status,
+        complexity=context_complexity
+    )
+
+    return selected_model
+```
+
+## Token Management and Optimization
+
+### Token Budget Allocation
+
+**Strategic Token Distribution**:
+```python
+TOKEN_BUDGET_ALLOCATION = {
+    'input_tokens': {
+        'context_loading': 0.40,  # 40% for code context
+        'task_description': 0.15,  # 15% for task details
+        'examples_references': 0.15,  # 15% for examples and docs
+        'instructions_prompts': 0.20,  # 20% for system instructions
+        'buffer_contingency': 0.10   # 10% buffer for unexpected needs
+    },
+    'output_tokens': {
+        'code_generation': 0.60,  # 60% for generated code
+        'explanations': 0.20,      # 20% for explanations
+        'documentation': 0.15,     # 15% for generated docs
+        'error_messages': 0.05     # 5% for error handling
+    }
+}
+
+def optimize_token_allocation(task_requirements, model_limits):
+    """Optimize token allocation for maximum efficiency"""
+    total_budget = model_limits['max_tokens']
+
+    optimized_allocation = calculate_optimal_distribution(
+        TOKEN_BUDGET_ALLOCATION, task_requirements, total_budget
+    )
+
+    return enforce_token_constraints(optimized_allocation, model_limits)
+```
+
+### Token Efficiency Techniques
+
+**Context Compression Strategies**:
+1. **Semantic Deduplication**: Remove redundant information
+2. **Hierarchical Summarization**: Summarize complex sections
+3. **Reference Externalization**: Link to external documentation
+4. **Progressive Disclosure**: Load context in stages
+
+**Compression Implementation**:
+```python
+def compress_context_for_efficiency(context_parts, target_token_budget):
+    """Compress context while preserving essential information"""
+
+    # Step 1: Remove redundancy
+    deduplicated = remove_redundant_information(context_parts)
+
+    # Step 2: Summarize verbose sections
+    summarized = apply_hierarchical_summarization(deduplicated)
+
+    # Step 3: Externalize references
+    externalized = externalize_nonessential_references(summarized)
+
+    # Step 4: Validate compression quality
+    compression_quality = validate_compression_quality(
+        original=context_parts,
+        compressed=externalized,
+        budget=target_token_budget
+    )
+
+    if compression_quality['acceptable']:
+        return externalized
+    else:
+        return apply_additional_compression(externalized, compression_quality)
+```
+
+### Response Length Optimization
+
+**Output Control Strategies**:
+```python
+OUTPUT_OPTIMIZATION_STRATEGIES = {
+    'concise_mode': {
+        'max_length_modifier': 0.7,
+        'verbosity_level': 'minimal',
+        'explanation_depth': 'high_level_only',
+        'code_comment_ratio': 'code_focused'
+    },
+    'balanced_mode': {
+        'max_length_modifier': 1.0,
+        'verbosity_level': 'standard',
+        'explanation_depth': 'key_details',
+        'code_comment_ratio': 'balanced'
+    },
+    'comprehensive_mode': {
+        'max_length_modifier': 1.3,
+        'verbosity_level': 'detailed',
+        'explanation_depth': 'full_explanation',
+        'code_comment_ratio': 'well_documented'
+    }
+}
+
+def optimize_response_length(task_requirements, cost_constraints):
+    """Optimize response length based on task needs and cost constraints"""
+
+    if cost_constraints['high_priority']:
+        strategy = OUTPUT_OPTIMIZATION_STRATEGIES['concise_mode']
+    elif task_requirements['needs_detailed_explanation']:
+        strategy = OUTPUT_OPTIMIZATION_STRATEGIES['comprehensive_mode']
+    else:
+        strategy = OUTPUT_OPTIMIZATION_STRATEGIES['balanced_mode']
+
+    return apply_output_optimization(strategy, task_requirements)
+```
+
+## Batch Operations and Parallelization
+
+### Operation Batching Strategies
+
+**Request Batching**:
+```python
+def optimize_batch_operations(pending_tasks, model_capabilities):
+    """Optimize task execution through intelligent batching"""
+
+    # Group similar tasks
+    task_groups = group_similar_tasks(pending_tasks)
+
+    # Calculate batch efficiency
+    batch_efficiency = calculate_batch_efficiency(task_groups, model_capabilities)
+
+    # Optimize batch sizes
+    optimal_batches = optimize_batch_sizes(task_groups, batch_efficiency)
+
+    # Schedule execution
+    execution_schedule = schedule_batch_execution(optimal_batches)
+
+    return execution_schedule
+```
+
+**Parallel Execution Patterns**:
+```python
+async def execute_parallel_operations(operation_groups, concurrency_limits):
+    """Execute operations in parallel for maximum efficiency"""
+
+    semaphore = asyncio.Semaphore(concurrency_limits['max_concurrent'])
+
+    async def execute_with_limit(operation):
+        async with semaphore:
+            return await execute_single_operation(operation)
+
+    # Execute all operations with concurrency control
+    results = await asyncio.gather(*[
+        execute_with_limit(op) for op in operation_groups
+    ], return_exceptions=True)
+
+    return process_parallel_results(results)
+```
+
+### Cost-Benefit Analysis for Parallelization
+
+**Parallelization Decision Framework**:
+```python
+def should_parallelize_operations(operations, cost_model):
+    """Determine if parallelization provides cost benefits"""
+
+    # Calculate sequential cost and time
+    sequential_metrics = calculate_sequential_metrics(operations, cost_model)
+
+    # Calculate parallel cost and time
+    parallel_metrics = calculate_parallel_metrics(operations, cost_model)
+
+    # Compare cost-benefit ratios
+    cost_benefit_ratio = calculate_cost_benefit_ratio(
+        sequential_metrics, parallel_metrics
+    )
+
+    # Consider concurrency limits and overhead
+    net_benefit = assess_net_benefit(
+        cost_benefit_ratio,
+        concurrency_overhead=parallel_metrics['overhead']
+    )
+
+    return net_benefit > cost_model['parallelization_threshold']
+```
+
+## Caching Strategies and Reuse
+
+### Intelligent Caching Framework
+
+**Cache Types and Strategies**:
+```python
+CACHE_STRATEGIES = {
+    'static_cache': {
+        'content_type': 'stable_knowledge',
+        'ttl': '1_week',
+        'invalidation': 'manual_version_update',
+        'use_case': 'API documentation, framework references'
+    },
+    'dynamic_cache': {
+        'content_type': 'frequently_accessed',
+        'ttl': '1_hour',
+        'invalidation': 'content_change_detection',
+        'use_case': 'Current codebase context, recent patterns'
+    },
+    'session_cache': {
+        'content_type': 'task_specific',
+        'ttl': 'session_duration',
+        'invalidation': 'session_end',
+        'use_case': 'Plan execution context, multi-step workflows'
+    },
+    'predictive_cache': {
+        'content_type': 'anticipated_needs',
+        'ttl': '15_minutes',
+        'invalidation': 'usage_pattern_change',
+        'use_case': 'Next likely context, common transitions'
+    }
+}
+
+def implement_adaptive_caching(cache_request, usage_patterns):
+    """Implement adaptive caching based on usage patterns"""
+
+    # Analyze usage patterns
+    pattern_analysis = analyze_usage_patterns(usage_patterns)
+
+    # Select optimal cache strategy
+    optimal_strategy = select_cache_strategy(pattern_analysis)
+
+    # Configure cache parameters
+    cache_config = configure_cache_parameters(
+        strategy=optimal_strategy,
+        request=cache_request,
+        patterns=pattern_analysis
+    )
+
+    return initialize_adaptive_cache(cache_config)
+```
+
+### Cache Invalidation and Maintenance
+
+**Intelligent Invalidation**:
+```python
+def implement_smart_invalidation(cache_entries, change_events):
+    """Implement intelligent cache invalidation based on change types"""
+
+    invalidation_rules = {
+        'code_changes': {
+            'file_modified': invalidate_file_specific_cache,
+            'dependency_updated': invalidate_dependency_chain,
+            'interface_changed': invalidate_interface_dependents
+        },
+        'knowledge_updates': {
+            'new_practices': update_knowledge_cache,
+            'deprecated_patterns': remove_outdated_cache,
+            'version_updates': refresh_version_specific_cache
+        },
+        'context_changes': {
+            'project_structure': rebuild_structure_cache,
+            'team_changes': refresh_collaboration_cache,
+            'environment_updates': update_environment_cache
+        }
+    }
+
+    # Apply appropriate invalidation rules
+    for change_event in change_events:
+        if change_event['type'] in invalidation_rules:
+            apply_invalidation_rule(
+                invalidation_rules[change_event['type']],
+                change_event,
+                cache_entries
+            )
+
+    return get_updated_cache_state(cache_entries)
+```
+
+## Cost Monitoring and Analytics
+
+### Real-Time Cost Tracking
+
+**Cost Monitoring Implementation**:
+```python
+class CostMonitor:
+    def __init__(self, budget_limits, alerting_thresholds):
+        self.budget_limits = budget_limits
+        self.alerting_thresholds = alerting_thresholds
+        self.usage_history = []
+
+    def track_operation_cost(self, operation_details):
+        """Track cost of individual operations"""
+        cost_breakdown = calculate_operation_cost(operation_details)
+
+        # Update running totals
+        self.update_usage_totals(cost_breakdown)
+
+        # Check budget limits
+        budget_status = self.check_budget_limits()
+
+        # Trigger alerts if needed
+        if budget_status['exceeded']:
+            self.trigger_budget_alert(budget_status)
+
+        return {
+            'cost_breakdown': cost_breakdown,
+            'budget_status': budget_status,
+            'recommendations': self.generate_cost_recommendations()
+        }
+
+    def generate_cost_report(self, time_period):
+        """Generate comprehensive cost analysis report"""
+        usage_analysis = analyze_usage_patterns(self.usage_history, time_period)
+
+        efficiency_metrics = calculate_efficiency_metrics(usage_analysis)
+
+        optimization_opportunities = identify_optimization_opportunities(
+            usage_analysis, efficiency_metrics
+        )
+
+        return {
+            'usage_summary': usage_analysis,
+            'efficiency_metrics': efficiency_metrics,
+            'optimization_recommendations': optimization_opportunities,
+            'forecasted_costs': forecast_future_costs(usage_analysis)
+        }
+```
+
+### Budget Management and Alerts
+
+**Budget Control Framework**:
+```python
+BUDGET_CONTROLS = {
+    'daily_limits': {
+        'soft_limit': 0.8,  # 80% of daily budget
+        'hard_limit': 0.95,  # 95% of daily budget
+        'alert_threshold': 0.9  # Alert at 90%
+    },
+    'monthly_limits': {
+        'soft_limit': 0.85,
+        'hard_limit': 0.98,
+        'alert_threshold': 0.92
+    },
+    'operation_limits': {
+        'max_cost_per_operation': 0.50,  # $0.50 max per operation
+        'expensive_operation_threshold': 0.25  # Flag operations over $0.25
+    }
+}
+
+def implement_budget_governance(cost_tracking, budget_limits):
+    """Implement comprehensive budget governance"""
+
+    # Real-time monitoring
+    monitoring_status = monitor_real_time_costs(cost_tracking)
+
+    # Predictive analytics
+    cost_predictions = predict_cost_trends(cost_tracking, budget_limits)
+
+    # Automated controls
+    control_actions = implement_automated_controls(
+        monitoring_status, cost_predictions, budget_limits
+    )
+
+    # Alert management
+    alert_status = manage_budget_alerts(
+        monitoring_status, cost_predictions, budget_limits
+    )
+
+    return {
+        'monitoring': monitoring_status,
+        'predictions': cost_predictions,
+        'controls': control_actions,
+        'alerts': alert_status
+    }
+```
+
+## Performance Optimization Techniques
+
+### Latency Reduction Strategies
+
+**Response Time Optimization**:
+```python
+LATENCY_OPTIMIZATION = {
+    'model_warmup': {
+        'technique': 'preload_frequent_models',
+        'benefit': '50-70% faster first response',
+        'cost_impact': 'minimal_increased_memory'
+    },
+    'context_prefetching': {
+        'technique': 'predict_and_preload_context',
+        'benefit': '30-50% faster context loading',
+        'cost_impact': 'moderate_token_usage'
+    },
+    'response_streaming': {
+        'technique': 'stream_partial_responses',
+        'benefit': 'perceived_faster_responses',
+        'cost_impact': 'negligible'
+    },
+    'caching_optimization': {
+        'technique': 'optimize_cache_hit_rates',
+        'benefit': '40-60% faster repeated_operations',
+        'cost_impact': 'initial_setup_cost'
+    }
+}
+
+def optimize_system_latency(performance_metrics, cost_constraints):
+    """Optimize system latency while respecting cost constraints"""
+
+    applicable_optimizations = filter_applicable_optimizations(
+        LATENCY_OPTIMIZATION, performance_metrics
+    )
+
+    prioritized_optimizations = prioritize_by_impact(
+        applicable_optimizations, cost_constraints
+    )
+
+    implementation_plan = create_implementation_plan(
+        prioritized_optimizations, performance_metrics
+    )
+
+    return execute_optimization_plan(implementation_plan)
+```
+
+### Resource Utilization Optimization
+
+**Resource Efficiency Patterns**:
+```python
+RESOURCE_OPTIMIZATION = {
+    'memory_management': {
+        'technique': 'optimize_memory_usage',
+        'metrics': ['memory_efficiency', 'garbage_collection_frequency'],
+        'target': 'reduce_memory_overhead_by_30%'
+    },
+    'cpu_optimization': {
+        'technique': 'optimize_cpu_utilization',
+        'metrics': ['cpu_efficiency', 'parallelization_ratio'],
+        'target': 'improve_cpu_utilization_by_25%'
+    },
+    'network_efficiency': {
+        'technique': 'optimize_network_requests',
+        'metrics': ['request_efficiency', 'bandwidth_usage'],
+        'target': 'reduce_network_overhead_by_40%'
+    },
+    'storage_optimization': {
+        'technique': 'optimize_storage_usage',
+        'metrics': ['storage_efficiency', 'cache_hit_rate'],
+        'target': 'improve_storage_efficiency_by_35%'
+    }
+}
+
+def implement_resource_optimization(resource_metrics, business_requirements):
+    """Implement comprehensive resource optimization"""
+
+    # Analyze current resource utilization
+    utilization_analysis = analyze_resource_utilization(resource_metrics)
+
+    # Identify optimization opportunities
+    optimization_candidates = identify_optimization_candidates(
+        utilization_analysis, RESOURCE_OPTIMIZATION
+    )
+
+    # Calculate ROI for each optimization
+    roi_analysis = calculate_optimization_roi(
+        optimization_candidates, business_requirements
+    )
+
+    # Implement highest-ROI optimizations
+    implementation_results = implement_prioritized_optimizations(
+        roi_analysis, resource_metrics
+    )
+
+    return generate_optimization_report(implementation_results)
+```
+
+## Continuous Cost Optimization
+
+### Automated Cost Optimization
+
+**Self-Optimizing System**:
+```python
+class AutomatedCostOptimizer:
+    def __init__(self, cost_monitor, performance_tracker):
+        self.cost_monitor = cost_monitor
+        self.performance_tracker = performance_tracker
+        self.optimization_history = []
+
+    async def run_continuous_optimization(self):
+        """Run continuous cost optimization loop"""
+        while True:
+            # Collect current metrics
+            current_metrics = await self.collect_current_metrics()
+
+            # Analyze optimization opportunities
+            opportunities = self.analyze_optimization_opportunities(current_metrics)
+
+            # Implement safe optimizations
+            implemented_changes = await self.implement_safe_optimizations(opportunities)
+
+            # Monitor results
+            results = await self.monitor_optimization_results(implemented_changes)
+
+            # Learn and adapt
+            self.learn_from_optimization_results(results)
+
+            # Wait for next optimization cycle
+            await asyncio.sleep(OPTIMIZATION_INTERVAL)
+
+    def analyze_optimization_opportunities(self, metrics):
+        """Analyze current metrics for optimization opportunities"""
+        opportunities = []
+
+        # Model selection optimization
+        if metrics['cost_efficiency'] < 0.8:
+            opportunities.append({
+                'type': 'model_optimization',
+                'potential_savings': calculate_model_savings(metrics),
+                'risk_level': 'low'
+            })
+
+        # Token usage optimization
+        if metrics['token_efficiency'] < 0.75:
+            opportunities.append({
+                'type': 'token_optimization',
+                'potential_savings': calculate_token_savings(metrics),
+                'risk_level': 'medium'
+            })
+
+        # Caching optimization
+        if metrics['cache_hit_rate'] < 0.6:
+            opportunities.append({
+                'type': 'cache_optimization',
+                'potential_savings': calculate_cache_savings(metrics),
+                'risk_level': 'low'
+            })
+
+        return sorted(opportunities, key=lambda x: x['potential_savings'], reverse=True)
+```
+
+### Cost-Benefit Analysis Framework
+
+**Optimization Decision Making**:
+```python
+def perform_cost_benefit_analysis(optimization_candidate, current_baseline):
+    """Perform comprehensive cost-benefit analysis for optimizations"""
+
+    # Calculate implementation costs
+    implementation_costs = calculate_implementation_costs(optimization_candidate)
+
+    # Estimate ongoing benefits
+    ongoing_benefits = estimate_ongoing_benefits(optimization_candidate, current_baseline)
+
+    # Assess risk factors
+    risk_assessment = assess_implementation_risks(optimization_candidate)
+
+    # Calculate ROI and payback period
+    roi_analysis = calculate_return_on_investment(
+        implementation_costs, ongoing_benefits, risk_assessment
+    )
+
+    # Generate recommendation
+    recommendation = generate_optimization_recommendation(
+        roi_analysis, risk_assessment, current_baseline
+    )
+
+    return {
+        'analysis': roi_analysis,
+        'recommendation': recommendation,
+        'implementation_plan': create_implementation_plan(optimization_candidate),
+        'monitoring_plan': create_monitoring_plan(optimization_candidate)
+    }
+```
+
+This comprehensive cost optimization framework ensures intelligent resource utilization, continuous improvement, and maximum value delivery while maintaining performance and quality standards.

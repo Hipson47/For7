@@ -1,0 +1,218 @@
+---
+alwaysApply: true
+---
+
+# Knowledge Integration Rules
+
+## Knowledge Base Architecture
+
+The agent maintains a comprehensive knowledge base in `.cursor/knowledge/` containing:
+- **Research Reports**: Emerging technologies, backend engineering, AI reasoning
+- **Best Practices**: Cursor 2.0 patterns, testing strategies, security guidelines
+- **Learning System**: nauka.json with lessons from past issues and solutions
+- **Documentation**: Backend patterns, Docker practices, LLM reasoning frameworks
+
+## Knowledge Source Prioritization
+
+### Tier 1: Core Cursor Practices (unified_cursor_agent_pack.json)
+**Primary Sources:**
+- Plan-then-execute workflow patterns
+- Context scoping with @file/@folder/@symbol
+- Model selection matrix (seedream_v4_edit, gemini_25_flash, GPT-5/Claude 4.5)
+- Security handling and CWE checklist
+- Safe edit protocol with minimal diffs
+
+**Usage Guidelines:**
+- Consult for all major development workflows
+- Apply model selection based on task complexity
+- Use plan-then-execute for multi-step features
+- Reference security patterns for secure coding
+
+### Tier 2: Reasoning Strategies (unified_llm_reasoning.json)
+**Primary Sources:**
+- Tree-of-Thought (ToT) for complex multi-step tasks
+- Chain-of-Thought (CoT) for straightforward implementations
+- Graph-of-Thoughts (GoT) for interdependent systems
+- Self-Consistency for validation
+- Zero-Shot and Few-Shot prompting patterns
+
+**Usage Guidelines:**
+- **ToT**: Use for architectural decisions, complex refactoring, multi-component features
+- **CoT**: Use for single-file changes, bug fixes, simple feature additions
+- **GoT**: Use for systems with complex dependencies, event-driven architectures
+- **Self-Consistency**: Apply when multiple solution approaches are possible
+
+### Tier 3: Plan Mode Practices (cursor_2_0_best_practices.json)
+**Primary Sources:**
+- Plan Mode activation and background planning
+- Parallel agent execution patterns
+- Multi-model collaboration strategies
+- Context management and indexing
+- AI TDD and code review automation
+
+**Usage Guidelines:**
+- Activate Plan Mode for tasks spanning 3+ files
+- Use background planning for long-running tasks
+- Leverage parallel agents for complex design decisions
+- Apply AI TDD patterns for comprehensive testing
+
+### Tier 4: Domain-Specific Knowledge
+**Backend Engineering (Backend.md):**
+- Modular monolith architecture patterns
+- Domain-Driven Design (DDD) implementation
+- Event-Driven Architecture (EDA) topologies
+- Serverless evolution and frameworks
+- Clean Architecture principles
+
+**Testing Practices (python_pytest_best_practices.md):**
+- pytest patterns and fixtures
+- Mocking strategies
+- Coverage requirements and reporting
+- Integration testing patterns
+
+**Infrastructure (Docker Best Practices):**
+- Multi-stage build optimization
+- Security hardening patterns
+- Distroless images and minimal attack surface
+- Health checks and monitoring
+
+## Knowledge Query Strategies
+
+### When to Use codebase_search
+- Understanding existing project structure and patterns
+- Finding specific implementation examples in current codebase
+- Identifying code dependencies and relationships
+- Locating configuration files and settings
+
+### When to Read Knowledge Files Directly
+- Accessing best practices for new implementations
+- Understanding reasoning frameworks for complex decisions
+- Reviewing security patterns and checklists
+- Learning testing strategies and patterns
+
+### When to Use grep
+- Finding specific code patterns across the project
+- Identifying import statements and dependencies
+- Locating function definitions and usage
+- Searching for configuration keys and values
+
+## RAG (Retrieval-Augmented Generation) Patterns
+
+### Knowledge-to-Codebase Integration
+1. **Query Knowledge Base**: Identify relevant best practices for the current task
+2. **Analyze Codebase**: Use codebase_search to understand current implementation
+3. **Synthesize Solution**: Combine knowledge patterns with codebase context
+4. **Validate Implementation**: Ensure solution follows both knowledge best practices and codebase patterns
+
+### Multi-Source Reasoning
+1. **Identify Task Complexity**: Determine if ToT, CoT, or GoT is appropriate
+2. **Gather Context**: Collect relevant knowledge from multiple sources
+3. **Apply Reasoning Framework**: Use appropriate reasoning pattern to structure solution
+4. **Validate Against Knowledge**: Cross-reference solution with knowledge base
+
+## Knowledge Caching and Performance
+
+### Caching Strategies
+- **Frequently Used Patterns**: Cache commonly referenced knowledge sections
+- **Project-Specific Knowledge**: Cache project architecture and patterns
+- **Recent Lessons**: Cache recent nauka.json entries for quick access
+- **Invalidation**: Clear cache when knowledge base is updated
+
+### Token Optimization
+- **Context Scoping**: Use @file/@folder/@symbol to limit context window
+- **Selective Inclusion**: Include only relevant knowledge sections
+- **Progressive Disclosure**: Provide knowledge in stages as needed
+- **Summary Usage**: Use knowledge summaries when full content isn't required
+
+## Knowledge Validation and Updates
+
+### Knowledge Validation
+- **Relevance Check**: Ensure knowledge applies to current technology stack
+- **Freshness Assessment**: Verify knowledge is current and not outdated
+- **Context Matching**: Confirm knowledge fits the specific project context
+- **Quality Verification**: Cross-reference multiple sources for consistency
+
+### Knowledge Updates
+- **New Patterns**: Add new best practices as they're discovered
+- **Technology Changes**: Update knowledge when frameworks or tools change
+- **Lesson Integration**: Incorporate successful patterns from nauka.json
+- **Community Best Practices**: Include evolving industry standards
+
+## Role-Specific Knowledge Usage
+
+### Expert Full Stack Developer Role
+- **Primary Focus**: Backend.md, Docker Best Practices, unified_cursor_agent_pack.json
+- **Reasoning**: CoT for implementation, ToT for architecture decisions
+- **Validation**: Security patterns, performance optimization
+
+### QA Manager Role
+- **Primary Focus**: python_pytest_best_practices.md, unified_cursor_agent_pack.json
+- **Reasoning**: Self-Consistency for test validation, CoT for test implementation
+- **Validation**: Coverage requirements, testing best practices
+
+### LeadTechnicalWriter Role
+- **Primary Focus**: cursor_2_0_best_practices.json, unified_llm_reasoning.json
+- **Reasoning**: GoT for complex plan dependencies, ToT for comprehensive planning
+- **Validation**: Documentation standards, stakeholder communication patterns
+
+## Learning System Integration (nauka.json)
+
+### Pre-Implementation Checks
+1. **Lesson Review**: Search nauka.json for similar past issues
+2. **Pattern Matching**: Identify relevant prevention strategies
+3. **Risk Assessment**: Evaluate current task against known problem patterns
+4. **Prevention Application**: Apply preventive measures from lessons
+
+### Post-Implementation Learning
+1. **Success Analysis**: Document successful patterns for future reference
+2. **Failure Analysis**: Add new lessons when encountering novel issues
+3. **Pattern Extraction**: Identify reusable solutions and best practices
+4. **Knowledge Update**: Integrate lessons into broader knowledge base
+
+## Knowledge Maintenance Procedures
+
+### Regular Maintenance Tasks
+- **Weekly Review**: Check for updates in knowledge sources
+- **Monthly Audit**: Validate knowledge relevance and accuracy
+- **Quarterly Updates**: Incorporate new industry best practices
+- **Issue Response**: Update knowledge based on project issues and solutions
+
+### Quality Assurance
+- **Consistency Checks**: Ensure knowledge across sources is consistent
+- **Completeness Validation**: Verify all major patterns are covered
+- **Accuracy Verification**: Cross-reference with official documentation
+- **Usage Tracking**: Monitor which knowledge sections are most valuable
+
+## Integration with Reasoning Frameworks
+
+### Tree-of-Thoughts (ToT) Integration
+- **Knowledge Exploration**: Use knowledge base to identify multiple solution approaches
+- **Pattern Evaluation**: Assess solution branches against known best practices
+- **Risk Assessment**: Evaluate implementation risks using historical lessons
+- **Decision Optimization**: Choose optimal path based on knowledge-backed criteria
+
+### Chain-of-Thoughts (CoT) Integration
+- **Step Validation**: Validate each implementation step against best practices
+- **Pattern Application**: Apply proven patterns from knowledge base
+- **Quality Assurance**: Ensure each step meets quality standards
+- **Documentation**: Record reasoning for future reference
+
+### Graph-of-Thoughts (GoT) Integration
+- **Dependency Mapping**: Model component relationships using architectural patterns
+- **Knowledge Integration**: Connect knowledge sources across the solution graph
+- **Validation Networks**: Ensure all graph nodes meet quality and consistency requirements
+- **Evolution Tracking**: Monitor how knowledge influences graph structure over time
+
+## Performance Monitoring and Optimization
+
+### Knowledge Usage Metrics
+- **Query Success Rate**: Track successful knowledge retrieval and application
+- **Response Time**: Monitor time to access and process knowledge
+- **Relevance Score**: Measure how well knowledge matches task requirements
+- **Learning Impact**: Track improvement in task completion quality
+
+### Continuous Improvement
+- **Feedback Loop**: Use task outcomes to improve knowledge organization
+- **Pattern Recognition**: Identify frequently needed knowledge patterns
+- **Automation Opportunities**: Develop shortcuts for common knowledge queries
+- **User Experience**: Optimize knowledge access for different user needs

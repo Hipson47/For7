@@ -1,0 +1,568 @@
+---
+alwaysApply: true
+---
+# Error Recovery and Debugging Patterns
+
+## Overview
+
+This rule defines comprehensive error recovery and debugging patterns for systematic problem resolution. The approach integrates nauka.json lessons, pattern recognition, and structured debugging workflows to minimize downtime and prevent recurring issues.
+
+## Error Pattern Recognition
+
+### Automatic Error Classification
+
+#### Pattern Matching Framework
+**Error Categorization**:
+```python
+ERROR_PATTERNS = {
+    'import_errors': {
+        'ModuleNotFoundError': 'missing_dependency',
+        'ImportError': 'import_path_issue',
+        'CircularImport': 'circular_dependency'
+    },
+    'runtime_errors': {
+        'AttributeError': 'missing_attribute',
+        'TypeError': 'type_mismatch',
+        'ValueError': 'invalid_value'
+    },
+    'async_errors': {
+        'coroutine': 'async_context_issue',
+        'RuntimeError': 'event_loop_error',
+        'CancelledError': 'task_cancellation'
+    },
+    'integration_errors': {
+        'ConnectionError': 'network_connectivity',
+        'TimeoutError': 'service_timeout',
+        'AuthenticationError': 'auth_failure'
+    }
+}
+
+def classify_error(error_type, error_message, stack_trace):
+    """Automatically classify errors into known patterns"""
+    for category, patterns in ERROR_PATTERNS.items():
+        if error_type in patterns:
+            return {
+                'category': category,
+                'subcategory': patterns[error_type],
+                'confidence': calculate_confidence(error_message, stack_trace)
+            }
+    return {'category': 'unknown', 'subcategory': 'unclassified', 'confidence': 0.0}
+```
+
+#### Historical Pattern Matching
+**nauka.json Integration**:
+```python
+def match_historical_patterns(current_error, nauka_lessons):
+    """Match current error against historical lessons"""
+    matches = []
+    for lesson in nauka_lessons:
+        similarity_score = calculate_error_similarity(
+            current_error, lesson['issue']
+        )
+        if similarity_score > 0.8:  # High confidence match
+            matches.append({
+                'lesson': lesson,
+                'similarity': similarity_score,
+                'prevention_strategy': lesson.get('prevention', [])
+            })
+    return sorted(matches, key=lambda x: x['similarity'], reverse=True)
+```
+
+### Error Context Analysis
+
+#### Stack Trace Analysis
+**Key Information Extraction**:
+- **Error Location**: File, line number, function
+- **Call Chain**: Sequence of function calls leading to error
+- **Variable State**: Values at point of failure
+- **System State**: Environment and configuration
+
+**Analysis Pattern**:
+```python
+def analyze_stack_trace(stack_trace):
+    """Extract actionable information from stack traces"""
+    analysis = {
+        'error_location': extract_error_location(stack_trace),
+        'call_chain': extract_call_chain(stack_trace),
+        'context_variables': extract_variable_context(stack_trace),
+        'system_context': extract_system_context(stack_trace),
+        'likely_cause': infer_likely_cause(stack_trace)
+    }
+    return analysis
+```
+
+#### Error Context Gathering
+**Context Collection Checklist**:
+- [ ] Environment variables and configuration
+- [ ] Input data that triggered the error
+- [ ] System resource usage (CPU, memory, disk)
+- [ ] Recent code changes and deployments
+- [ ] Related log entries and metrics
+- [ ] External service statuses and responses
+
+## Systematic Debugging Workflow
+
+### Phase 1: Error Assessment and Isolation
+
+#### Initial Triage Process
+1. **Error Classification**: Categorize the error using pattern matching
+2. **Severity Assessment**: Determine impact and urgency
+3. **Scope Analysis**: Identify affected systems and users
+4. **Historical Check**: Search nauka.json for similar issues
+
+**Triage Decision Tree**:
+```python
+def triage_error(error_info, system_context):
+    """Perform initial error assessment"""
+    classification = classify_error(error_info)
+
+    if classification['category'] == 'known_pattern':
+        return apply_historical_solution(classification, error_info)
+
+    severity = assess_severity(error_info, system_context)
+
+    if severity == 'critical':
+        return trigger_emergency_response(error_info)
+    elif severity == 'high':
+        return schedule_immediate_investigation(error_info)
+    else:
+        return queue_for_scheduled_analysis(error_info)
+```
+
+#### Error Isolation Techniques
+
+**Component Isolation**:
+- **Unit Isolation**: Test individual functions in isolation
+- **Service Isolation**: Disable dependent services to isolate issues
+- **Data Isolation**: Use test data to eliminate data-related issues
+- **Environment Isolation**: Test in staging environments
+
+**Isolation Strategy**:
+```python
+def isolate_error_component(error_signature, system_components):
+    """Isolate the failing component systematically"""
+    isolation_results = {}
+
+    # Test individual components
+    for component in system_components:
+        try:
+            test_component_isolation(component, error_signature)
+            isolation_results[component] = 'passed'
+        except Exception as e:
+            isolation_results[component] = {
+                'status': 'failed',
+                'error': str(e),
+                'confidence': calculate_failure_confidence(e, error_signature)
+            }
+
+    return identify_root_cause_component(isolation_results)
+```
+
+### Phase 2: Root Cause Analysis
+
+#### Systematic Investigation Framework
+
+**Scientific Method Application**:
+1. **Observation**: Gather error data and symptoms
+2. **Hypothesis Formation**: Generate possible explanations
+3. **Experimentation**: Test hypotheses through targeted changes
+4. **Analysis**: Evaluate experimental results
+5. **Conclusion**: Determine root cause and solution
+
+**Hypothesis Generation**:
+```python
+def generate_error_hypotheses(error_analysis, system_context):
+    """Generate ranked hypotheses for root cause"""
+    hypotheses = []
+
+    # Pattern-based hypotheses
+    if error_analysis['category'] == 'import_errors':
+        hypotheses.extend(generate_import_hypotheses(error_analysis))
+
+    if error_analysis['category'] == 'async_errors':
+        hypotheses.extend(generate_async_hypotheses(error_analysis))
+
+    # Context-based hypotheses
+    hypotheses.extend(generate_context_hypotheses(system_context))
+
+    # Historical hypotheses
+    hypotheses.extend(generate_historical_hypotheses(error_analysis))
+
+    return rank_hypotheses_by_likelihood(hypotheses)
+```
+
+#### Root Cause Analysis Tools
+
+**Five Why's Technique**:
+```python
+def apply_five_whys(initial_problem, max_depth=5):
+    """Apply 5 Why's root cause analysis"""
+    current_problem = initial_problem
+    analysis_chain = [current_problem]
+
+    for depth in range(max_depth):
+        why_answer = ask_why(current_problem)
+        analysis_chain.append(why_answer)
+
+        if is_root_cause(why_answer):
+            break
+
+        current_problem = why_answer
+
+    return {
+        'analysis_chain': analysis_chain,
+        'root_cause': analysis_chain[-1],
+        'depth': len(analysis_chain) - 1
+    }
+```
+
+**Fishbone Diagram Analysis**:
+```python
+def create_fishbone_analysis(error_info):
+    """Create fishbone diagram for systematic cause analysis"""
+    categories = {
+        'people': analyze_people_factors(error_info),
+        'process': analyze_process_factors(error_info),
+        'equipment': analyze_equipment_factors(error_info),
+        'environment': analyze_environment_factors(error_info),
+        'materials': analyze_material_factors(error_info),
+        'measurement': analyze_measurement_factors(error_info)
+    }
+
+    return identify_primary_contributing_factors(categories)
+```
+
+### Phase 3: Solution Implementation and Testing
+
+#### Solution Development Framework
+
+**Solution Criteria**:
+- **Effectiveness**: Addresses root cause completely
+- **Efficiency**: Minimal changes required
+- **Safety**: No introduction of new issues
+- **Testability**: Solution can be verified
+- **Maintainability**: Solution is understandable and maintainable
+
+**Solution Validation**:
+```python
+def validate_solution_approach(solution, error_analysis):
+    """Validate proposed solution against criteria"""
+    validation_results = {
+        'effectiveness': assess_solution_effectiveness(solution, error_analysis),
+        'efficiency': assess_solution_efficiency(solution),
+        'safety': assess_solution_safety(solution, error_analysis),
+        'testability': assess_solution_testability(solution),
+        'maintainability': assess_solution_maintainability(solution)
+    }
+
+    overall_score = calculate_overall_score(validation_results)
+
+    return {
+        'validation_results': validation_results,
+        'overall_score': overall_score,
+        'recommendations': generate_improvement_recommendations(validation_results)
+    }
+```
+
+#### Incremental Fix Implementation
+**Implementation Strategy**:
+1. **Minimal Change**: Implement smallest possible fix
+2. **Isolated Testing**: Test fix in isolation first
+3. **Gradual Rollout**: Deploy to limited scope initially
+4. **Monitoring**: Monitor for side effects and unexpected issues
+5. **Rollback Plan**: Prepare rollback procedures
+
+**Implementation Pattern**:
+```python
+def implement_incremental_fix(solution, test_environment):
+    """Implement and validate fix incrementally"""
+    # Step 1: Implement minimal fix
+    implemented_changes = apply_minimal_fix(solution)
+
+    # Step 2: Test in isolation
+    isolation_test_results = run_isolation_tests(implemented_changes)
+
+    if not isolation_test_results['passed']:
+        return rollback_changes(implemented_changes)
+
+    # Step 3: Test integration
+    integration_test_results = run_integration_tests(implemented_changes)
+
+    if not integration_test_results['passed']:
+        return rollback_changes(implemented_changes)
+
+    # Step 4: Gradual rollout
+    rollout_results = perform_gradual_rollout(implemented_changes)
+
+    return {
+        'status': 'success' if rollout_results['success'] else 'failed',
+        'monitoring_required': True,
+        'rollback_available': True
+    }
+```
+
+### Phase 4: Prevention and Learning
+
+#### nauka.json Lesson Creation
+
+**Lesson Structure**:
+```python
+def create_error_lesson(error_info, solution, context):
+    """Create comprehensive lesson from error resolution"""
+    lesson = {
+        'date': datetime.now().isoformat(),
+        'issue': error_info['description'],
+        'location': error_info['location'],
+        'root_cause': error_info['root_cause'],
+        'fix': solution['description'],
+        'tip': generate_generalizable_tip(error_info, solution),
+        'prevention': generate_prevention_strategies(error_info, context),
+        'status': '✅ NAPRAWIONE',
+        'changes': solution['changes_made'],
+        'verification': {
+            'test_coverage': solution['test_coverage'],
+            'monitoring_added': solution['monitoring_implemented'],
+            'documentation_updated': solution['docs_updated']
+        },
+        'metadata': {
+            'error_category': error_info['category'],
+            'severity': error_info['severity'],
+            'system_impact': error_info['impact'],
+            'resolution_time': solution['time_taken']
+        }
+    }
+
+    return lesson
+```
+
+#### Prevention Strategy Development
+
+**Prevention Categories**:
+- **Code-Level Prevention**: Input validation, error handling, type checking
+- **Architecture Prevention**: Circuit breakers, retries, fallbacks
+- **Process Prevention**: Code reviews, testing requirements, monitoring
+- **Monitoring Prevention**: Alerting, logging, metrics collection
+
+**Prevention Implementation**:
+```python
+def implement_prevention_measures(lesson, codebase):
+    """Implement prevention measures from lesson"""
+    prevention_actions = {
+        'code_review_rules': add_code_review_rules(lesson),
+        'monitoring_alerts': add_monitoring_alerts(lesson),
+        'test_requirements': add_test_requirements(lesson),
+        'documentation_updates': update_documentation(lesson),
+        'architecture_improvements': implement_architecture_changes(lesson)
+    }
+
+    return apply_prevention_actions(prevention_actions, codebase)
+```
+
+## Recovery Strategies by Error Type
+
+### Import and Module Errors
+
+**Immediate Recovery**:
+1. Check import paths and module existence
+2. Verify virtual environment and dependencies
+3. Clear import caches and restart application
+4. Check for circular import issues
+
+**Prevention**:
+- Use absolute imports consistently
+- Implement import validation in CI/CD
+- Maintain dependency management practices
+- Document import patterns and conventions
+
+### Async and Concurrency Errors
+
+**Immediate Recovery**:
+1. Check event loop status and thread safety
+2. Verify await usage in async contexts
+3. Examine task cancellation and timeout handling
+4. Review concurrent access patterns
+
+**Prevention**:
+- Implement proper async context managers
+- Use lazy loading for async dependencies
+- Add async deadlock detection
+- Test concurrent scenarios thoroughly
+
+### Database and Data Errors
+
+**Immediate Recovery**:
+1. Check database connectivity and credentials
+2. Verify query syntax and parameter binding
+3. Examine transaction states and rollbacks
+4. Review data integrity constraints
+
+**Prevention**:
+- Implement connection pooling and health checks
+- Use ORM query builders and validation
+- Add database migration testing
+- Implement data validation at boundaries
+
+### Network and Integration Errors
+
+**Immediate Recovery**:
+1. Check network connectivity and DNS resolution
+2. Verify service endpoints and authentication
+3. Examine timeout configurations and retries
+4. Review rate limiting and throttling
+
+**Prevention**:
+- Implement circuit breakers and fallbacks
+- Add comprehensive error handling and logging
+- Use exponential backoff for retries
+- Implement service mesh patterns
+
+## Automated Error Recovery
+
+### Self-Healing Patterns
+
+**Automatic Recovery Triggers**:
+- **Transient Errors**: Automatic retry with exponential backoff
+- **Configuration Errors**: Automatic reconfiguration attempts
+- **Resource Exhaustion**: Automatic resource cleanup and restart
+- **Network Issues**: Automatic failover and reconnection
+
+**Recovery Implementation**:
+```python
+class AutomatedErrorRecovery:
+    def __init__(self, error_patterns, recovery_strategies):
+        self.error_patterns = error_patterns
+        self.recovery_strategies = recovery_strategies
+
+    async def attempt_automatic_recovery(self, error_info):
+        """Attempt automatic error recovery"""
+        error_category = classify_error(error_info)
+
+        if error_category in self.recovery_strategies:
+            strategy = self.recovery_strategies[error_category]
+
+            for attempt in range(strategy['max_attempts']):
+                try:
+                    await self.execute_recovery_strategy(strategy, error_info)
+                    return {'status': 'recovered', 'attempts': attempt + 1}
+                except Exception as e:
+                    if attempt == strategy['max_attempts'] - 1:
+                        return {'status': 'failed', 'error': str(e)}
+                    await asyncio.sleep(strategy['backoff_delay'] * (2 ** attempt))
+
+        return {'status': 'no_automatic_recovery_available'}
+```
+
+### Recovery Monitoring and Metrics
+
+**Recovery Metrics**:
+- **Recovery Success Rate**: Percentage of automatic recoveries
+- **Mean Time to Recovery**: Average time for error resolution
+- **Recovery Attempt Distribution**: Success rates by attempt number
+- **Error Recurrence Rate**: Frequency of similar errors post-recovery
+
+**Monitoring Dashboard**:
+```python
+def generate_recovery_dashboard(recovery_metrics, time_window):
+    """Generate comprehensive recovery monitoring dashboard"""
+    dashboard = {
+        'overall_health': calculate_system_health(recovery_metrics),
+        'recovery_effectiveness': analyze_recovery_patterns(recovery_metrics),
+        'error_trends': identify_error_trends(recovery_metrics, time_window),
+        'improvement_opportunities': suggest_improvements(recovery_metrics),
+        'alerts': generate_recovery_alerts(recovery_metrics)
+    }
+
+    return dashboard
+```
+
+## Crisis Response and Escalation
+
+### Crisis Severity Assessment
+
+**Severity Levels**:
+- **Critical**: System-wide outage, data loss, security breach
+- **High**: Major functionality broken, significant user impact
+- **Medium**: Partial functionality issues, workaround available
+- **Low**: Minor issues, cosmetic problems, non-critical features
+
+**Escalation Triggers**:
+```python
+CRISIS_ESCALATION_TRIGGERS = {
+    'critical': {
+        'conditions': ['system_down', 'data_loss', 'security_breach'],
+        'response_time': 'immediate',
+        'notification_channels': ['sms', 'phone', 'slack_critical']
+    },
+    'high': {
+        'conditions': ['major_functionality_broken', 'revenue_impact'],
+        'response_time': '15_minutes',
+        'notification_channels': ['slack_urgent', 'email']
+    },
+    'medium': {
+        'conditions': ['partial_outage', 'performance_degraded'],
+        'response_time': '1_hour',
+        'notification_channels': ['slack_general', 'email']
+    }
+}
+```
+
+### Crisis Response Framework
+
+**Immediate Response (0-5 minutes)**:
+1. Acknowledge the crisis and notify stakeholders
+2. Assess initial impact and scope
+3. Activate crisis response team
+4. Implement temporary mitigation measures
+
+**Short-term Response (5-60 minutes)**:
+1. Isolate affected systems and users
+2. Gather detailed error information and logs
+3. Implement immediate fixes or workarounds
+4. Communicate status updates to stakeholders
+
+**Long-term Response (1-24 hours)**:
+1. Perform root cause analysis
+2. Implement permanent fixes
+3. Add monitoring and prevention measures
+4. Document lessons learned and update nauka.json
+
+## Error Prevention Culture
+
+### Proactive Error Prevention
+
+**Prevention Strategies**:
+- **Code Reviews**: Mandatory review for complex changes
+- **Testing Requirements**: Comprehensive test coverage
+- **Monitoring**: Real-time error detection and alerting
+- **Documentation**: Clear error handling and troubleshooting guides
+
+**Prevention Implementation**:
+```python
+def implement_error_prevention_culture(codebase, team_practices):
+    """Implement comprehensive error prevention culture"""
+    prevention_measures = {
+        'code_quality_gates': implement_quality_gates(codebase),
+        'testing_automation': setup_automated_testing(team_practices),
+        'monitoring_systems': deploy_monitoring_and_alerting(codebase),
+        'documentation_standards': establish_error_handling_docs(team_practices),
+        'training_programs': develop_error_prevention_training(team_practices)
+    }
+
+    return track_prevention_effectiveness(prevention_measures)
+```
+
+### Continuous Learning and Improvement
+
+**Learning Cycles**:
+- **Daily**: Review errors and apply immediate fixes
+- **Weekly**: Analyze error patterns and trends
+- **Monthly**: Review prevention effectiveness and update strategies
+- **Quarterly**: Conduct comprehensive system health assessments
+
+**Improvement Metrics**:
+- **Error Reduction**: Year-over-year error rate reduction
+- **Mean Time Between Failures**: System stability measurements
+- **Recovery Time**: Average time to resolve incidents
+- **Prevention ROI**: Cost savings from prevented incidents
+
+This comprehensive error recovery framework ensures systematic problem resolution, continuous learning, and proactive prevention across all system operations.
