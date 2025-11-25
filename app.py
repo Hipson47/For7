@@ -5,14 +5,13 @@ Dark gradient UI with glassmorphism design
 """
 
 import streamlit as st
-from datetime import datetime
 from pathlib import Path
 import sys
-import json
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.config import AppConfig, RAG_OPTIMIZED_MODELS
+from src.orchestrator import KnowledgeOrchestrator
 
 # ============================================================
 # PAGE CONFIG
@@ -44,8 +43,28 @@ def inject_global_styles():
         /* Hide Streamlit chrome */
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
-        header { visibility: hidden; }
         .stDeployButton { display: none; }
+        
+        /* Keep header visible but minimal */
+        header[data-testid="stHeader"] {
+            background: transparent !important;
+            height: auto !important;
+        }
+        
+        /* ===== HIDE SIDEBAR COLLAPSE BUTTON ===== */
+        /* Sidebar should always be visible - hide the collapse button to prevent issues */
+        section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        
+        /* Ensure sidebar is always visible */
+        section[data-testid="stSidebar"] {
+            transform: none !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
 
         /* ===== SIDEBAR - CONTROL CENTER ===== */
         section[data-testid="stSidebar"] {
@@ -525,6 +544,8 @@ def init_session_state():
         st.session_state.model = st.session_state.config.default_model
     if 'rag' not in st.session_state:
         st.session_state.rag = None
+    if 'orchestrator' not in st.session_state:
+        st.session_state.orchestrator = None
     if 'debug_mode' not in st.session_state:
         st.session_state.debug_mode = False
     if 'last_response_meta' not in st.session_state:
@@ -563,15 +584,57 @@ def get_client():
     return None
 
 # ============================================================
+# ORCHESTRATOR - LAZY LOADING
+# ============================================================
+def get_orchestrator():
+    """
+    Lazy load the Knowledge Orchestrator.
+    
+    The Orchestrator coordinates RAG search and LLM calls,
+    providing a unified interface for the chat UI.
+    
+    Returns:
+        KnowledgeOrchestrator instance or None if API key not configured
+    """
+    if st.session_state.orchestrator is None:
+        rag = get_rag()
+        client = get_client()
+        cfg = st.session_state.config
+        
+        if client is None:
+            return None
+        
+        st.session_state.orchestrator = KnowledgeOrchestrator(
+            rag_engine=rag,
+            ai_client=client,
+            config=cfg
+        )
+    return st.session_state.orchestrator
+
+# ============================================================
 # CHAT LOGIC
 # ============================================================
 def process_query(query: str, model: str):
-    """Process a user query through RAG + AI"""
+    """
+    Process a user query through the Orchestrator (RAG + AI).
+    
+    This function serves as the bridge between the Streamlit UI and 
+    the KnowledgeOrchestrator. It:
+    1. Adds the user message to chat history
+    2. Validates API key configuration
+    3. Delegates to the Orchestrator for RAG search + LLM generation
+    4. Stores the result in session state for UI rendering
+    
+    Args:
+        query: The user's question or message
+        model: The AI model to use for generation
+    """
     cfg = st.session_state.config
     
-    # Add user message
+    # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": query})
     
+    # Check for API key
     if not cfg.openrouter_api_key:
         st.session_state.messages.append({
             "role": "assistant", 
@@ -581,70 +644,42 @@ def process_query(query: str, model: str):
         })
         return
     
-    # Get context from RAG with status updates
-    context = "No context available."
-    sources = []
-    response_meta = {}
+    # Get orchestrator (handles RAG + LLM coordination)
+    orchestrator = get_orchestrator()
     
-    try:
-        rag = get_rag()
-        
-        # Search for relevant documents
-        search_results = rag.search(query, top_k=cfg.top_k_results)
-        
-        if search_results:
-            sources = [
-                {
-                    "filename": r.filename,
-                    "score": r.relevance_score,
-                    "snippet": r.content_preview[:400] + "..." if len(r.content_preview) > 400 else r.content_preview,
-                    "type": r.file_type
-                }
-                for r in search_results
-            ]
-            context = rag.get_context_for_query(query, top_k=cfg.top_k_results)
-        
-    except Exception as e:
-        context = f"Error retrieving context: {e}"
+    if orchestrator is None:
+        st.session_state.messages.append({
+            "role": "assistant", 
+            "content": "⚠️ **Configuration Error**\n\nUnable to initialize the orchestrator. Please check your API key.",
+            "model": model,
+            "sources": []
+        })
+        return
     
-    # Build prompt
-    prompt = f"""You are an intelligent knowledge assistant. Answer based on the provided context from the knowledge base.
-
-Rules:
-- Answer in the user's language (Polish for Polish questions, English for English)
-- Be concise but comprehensive
-- Use Markdown formatting for readability
-- Cite sources when possible (mention the filename)
-- If context doesn't contain the answer, say so honestly
-
-Context from knowledge base:
-{context}"""
+    # Delegate to orchestrator
+    result = orchestrator.handle_message(
+        user_message=query,
+        chat_history=st.session_state.messages,
+        model=model
+    )
     
-    msgs = [{"role": "system", "content": prompt}, {"role": "user", "content": query}]
+    # Add assistant message with orchestrator response
+    st.session_state.messages.append({
+        "role": "assistant", 
+        "content": result.answer, 
+        "model": result.model,
+        "sources": result.sources
+    })
     
-    # Call AI
-    client = get_client()
-    if client:
-        resp = client.chat_completion(msgs, model, cfg.temperature, cfg.max_tokens)
-        if resp.success:
-            st.session_state.messages.append({
-                "role": "assistant", 
-                "content": resp.content, 
-                "model": model,
-                "sources": sources
-            })
-            st.session_state.last_response_meta = {
-                "model": resp.model,
-                "usage": resp.usage
-            }
-            st.session_state.last_sources = sources
-        else:
-            st.session_state.messages.append({
-                "role": "assistant", 
-                "content": f"❌ **Error:** {resp.error}",
-                "model": model,
-                "sources": []
-            })
+    # Store metadata for debug panel
+    st.session_state.last_response_meta = {
+        "model": result.model,
+        "usage": result.usage,
+        "steps": result.steps,
+        "success": result.success,
+        "error": result.error
+    }
+    st.session_state.last_sources = result.sources
 
 # ============================================================
 # SIDEBAR - CONTROL CENTER
@@ -672,7 +707,7 @@ def render_sidebar():
                 stats = st.session_state.rag.get_stats()
             else:
                 stats = {"total_documents": "—", "total_chunks": "—"}
-        except:
+        except Exception:
             stats = {"total_documents": "—", "total_chunks": "—"}
         
         with col1:
@@ -724,6 +759,7 @@ def render_sidebar():
         if key != cfg.openrouter_api_key:
             cfg.openrouter_api_key = key
             cfg.save()
+            st.session_state.orchestrator = None  # Reset orchestrator with new API key
         
         st.caption("[Get API Key →](https://openrouter.ai/keys)")
         
@@ -747,6 +783,7 @@ def render_sidebar():
                 (knowledge_dir / f.name).write_bytes(f.getbuffer())
             st.success(f"✅ Added {len(files)} file(s)!")
             st.session_state.rag = None  # Force rebuild
+            st.session_state.orchestrator = None  # Reset orchestrator with new RAG
             st.rerun()
         
         st.divider()
@@ -773,6 +810,7 @@ def render_sidebar():
             
             if st.button("🔄 Rebuild RAG Index", use_container_width=True):
                 st.session_state.rag = None
+                st.session_state.orchestrator = None  # Reset orchestrator with new RAG
                 st.success("Index will rebuild on next query")
         
         st.divider()
@@ -807,7 +845,7 @@ def render_chat_messages():
         else:
             # AI message - left aligned with glassmorphism
             st.markdown(
-                f'''
+                '''
                 <div class="chat-message-wrapper">
                     <div class="chat-avatar chat-avatar-ai">🧠</div>
                     <div class="chat-message-ai">
@@ -863,12 +901,47 @@ def render_sources(sources):
             )
 
 def render_debug_info():
-    """Render debug information"""
+    """Render debug information including orchestrator steps"""
     meta = st.session_state.last_response_meta
     if meta:
         st.markdown('<div class="debug-section">', unsafe_allow_html=True)
         st.markdown('<div class="debug-header">🐞 Debug Information</div>', unsafe_allow_html=True)
-        st.json(meta)
+        
+        # Display orchestration steps if available
+        steps = meta.get("steps", [])
+        if steps:
+            st.markdown("**🎯 Orchestration Steps:**")
+            for i, step in enumerate(steps, 1):
+                step_type = step.get("type", "unknown")
+                description = step.get("description", "")
+                duration = step.get("duration_ms", 0)
+                
+                # Icon based on step type
+                icon = {
+                    "rag_search": "🔍",
+                    "context_build": "📝",
+                    "llm_call": "🤖"
+                }.get(step_type, "⚙️")
+                
+                st.markdown(f"{i}. {icon} **{step_type}**: {description} ({duration:.1f}ms)")
+                
+                # Show step metadata in expander
+                step_meta = step.get("metadata", {})
+                if step_meta:
+                    with st.expander(f"Step {i} details", expanded=False):
+                        st.json(step_meta)
+        
+        # Display general metadata
+        st.markdown("**📊 Response Metadata:**")
+        display_meta = {
+            "model": meta.get("model"),
+            "usage": meta.get("usage"),
+            "success": meta.get("success", True)
+        }
+        if meta.get("error"):
+            display_meta["error"] = meta.get("error")
+        st.json(display_meta)
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================
@@ -877,7 +950,6 @@ def render_debug_info():
 def main():
     """Main application entry point"""
     init_session_state()
-    cfg = st.session_state.config
     
     # Render sidebar
     render_sidebar()
