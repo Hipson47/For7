@@ -1,502 +1,244 @@
 #!/usr/bin/env python3
 """
-🤖 RAG Knowledge Assistant - Modern GUI
-AI-powered knowledge base assistant with OpenRouter integration
+📓 RAG Knowledge Assistant - NotebookLM Style
+Professional AI-powered knowledge base
 """
 
 import streamlit as st
-import requests
-import time
 from datetime import datetime
-import sys
 from pathlib import Path
+import sys
 
-# Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.config import AppConfig, RAG_OPTIMIZED_MODELS, get_model_info
-from src.rag_engine import get_rag_engine
-from src.ai_client import OpenRouterClient, RAGAssistant
+from src.config import AppConfig, RAG_OPTIMIZED_MODELS
 
-# Page configuration
+# Page config
 st.set_page_config(
-    page_title="🤖 RAG Knowledge Assistant",
-    page_icon="🧠",
+    page_title="Knowledge Assistant",
+    page_icon="📓",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for modern look
+# CSS
 st.markdown("""
 <style>
-    /* Main theme */
-    .stApp {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Headers */
-    h1, h2, h3 {
-        color: #e94560 !important;
-        font-family: 'Segoe UI', sans-serif;
-    }
+    .stApp { background: linear-gradient(180deg, #0f0f15 0%, #1a1a24 100%); }
+    #MainMenu, footer, .stDeployButton { visibility: hidden; }
+    .block-container { padding: 2rem; max-width: 900px; }
     
-    /* Cards */
-    .stExpander {
-        background-color: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        border: 1px solid rgba(233, 69, 96, 0.3);
-    }
+    .header { display: flex; align-items: center; gap: 12px; padding: 1rem 0 2rem 0; 
+              border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 2rem; }
+    .logo { width: 42px; height: 42px; background: linear-gradient(135deg, #6366f1, #8b5cf6); 
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .title { font-size: 1.3rem; font-weight: 600; color: #fff; font-family: 'Inter', sans-serif; }
+    .badge { background: rgba(99,102,241,0.2); color: #818cf8; padding: 4px 10px; 
+             border-radius: 20px; font-size: 11px; font-weight: 600; }
     
-    /* Buttons */
-    .stButton > button {
-        background: linear-gradient(90deg, #e94560, #0f3460);
-        color: white;
-        border: none;
-        border-radius: 20px;
-        padding: 10px 25px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
+    .welcome { text-align: center; padding: 4rem 0; }
+    .welcome-title { font-size: 2.5rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+    .welcome-sub { font-size: 1.1rem; color: rgba(255,255,255,0.5); margin-bottom: 2rem; }
     
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
-    }
+    .user-msg { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
+                border-radius: 16px; padding: 1rem 1.25rem; margin: 1rem 0; color: #fff; }
+    .bot-msg { padding: 1rem 0; color: rgba(255,255,255,0.9); line-height: 1.8; }
+    .model-tag { display: inline-block; background: rgba(255,255,255,0.05); padding: 4px 10px;
+                 border-radius: 12px; font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem; }
     
-    /* Text areas */
-    .stTextArea textarea {
-        background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(233, 69, 96, 0.3);
-        border-radius: 10px;
-        color: white;
-    }
+    section[data-testid="stSidebar"] { background: #0f0f15; border-right: 1px solid rgba(255,255,255,0.08); }
+    section[data-testid="stSidebar"] h2 { font-size: 0.85rem; font-weight: 600; 
+                                           color: rgba(255,255,255,0.4); text-transform: uppercase; }
     
-    /* Sidebar */
-    .css-1d391kg {
-        background-color: rgba(15, 52, 96, 0.8);
-    }
+    [data-testid="stFileUploader"] { background: rgba(255,255,255,0.02); 
+                                      border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; }
     
-    /* Success/Error messages */
-    .stSuccess {
-        background-color: rgba(0, 255, 0, 0.1);
-        border-left: 4px solid #00ff00;
-    }
+    .stButton > button { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
+                         border: none; border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 500; }
+    .stButton > button:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
     
-    .stError {
-        background-color: rgba(255, 0, 0, 0.1);
-        border-left: 4px solid #ff0000;
-    }
+    .stTextInput > div > div > input { background: rgba(255,255,255,0.03); 
+                                        border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; }
     
-    /* Model cards */
-    .model-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        padding: 15px;
-        margin: 10px 0;
-        border: 1px solid rgba(233, 69, 96, 0.2);
-    }
-    
-    /* Chat messages */
-    .user-message {
-        background: linear-gradient(90deg, #e94560, #0f3460);
-        border-radius: 15px 15px 5px 15px;
-        padding: 15px;
-        margin: 10px 0;
-    }
-    
-    .assistant-message {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 15px 15px 15px 5px;
-        padding: 15px;
-        margin: 10px 0;
-        border-left: 3px solid #e94560;
-    }
-    
-    /* Stats cards */
-    .stat-card {
-        background: rgba(233, 69, 96, 0.1);
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        border: 1px solid rgba(233, 69, 96, 0.3);
-    }
-    
-    .stat-number {
-        font-size: 2.5em;
-        font-weight: bold;
-        color: #e94560;
-    }
-    
-    .stat-label {
-        color: #aaa;
-        font-size: 0.9em;
-    }
+    .stat-box { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 10px; padding: 1rem; text-align: center; }
+    .stat-val { font-size: 1.5rem; font-weight: 600; color: #818cf8; }
+    .stat-lbl { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
 </style>
 """, unsafe_allow_html=True)
 
-def init_session_state():
-    """Initialize session state"""
+# Quick models
+QUICK_MODELS = {
+    "google/gemini-2.0-flash-exp:free": {"name": "Gemini 2.0", "icon": "✨"},
+    "google/gemini-pro-1.5": {"name": "Gemini Pro", "icon": "💎"},
+    "x-ai/grok-4.1-fast": {"name": "Grok 4.1", "icon": "🚀"},
+    "anthropic/claude-3.5-sonnet": {"name": "Claude 3.5", "icon": "🎭"},
+}
+
+def init():
     if 'config' not in st.session_state:
         st.session_state.config = AppConfig.load()
-    
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
-    
-    if 'rag_engine' not in st.session_state:
-        st.session_state.rag_engine = None
-    
-    if 'ai_client' not in st.session_state:
-        st.session_state.ai_client = None
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    if 'model' not in st.session_state:
+        st.session_state.model = st.session_state.config.default_model
+    if 'rag' not in st.session_state:
+        st.session_state.rag = None
 
 def get_rag():
-    """Get or initialize RAG engine"""
-    if st.session_state.rag_engine is None:
-        with st.spinner("🔄 Inicjalizacja bazy wiedzy..."):
-            st.session_state.rag_engine = get_rag_engine()
-    return st.session_state.rag_engine
+    """Lazy load RAG engine"""
+    if st.session_state.rag is None:
+        from src.rag_engine import RAGEngine
+        st.session_state.rag = RAGEngine()
+        st.session_state.rag.initialize()
+    return st.session_state.rag
 
-def get_ai_client():
-    """Get or initialize AI client"""
-    config = st.session_state.config
-    if config.openrouter_api_key:
-        if st.session_state.ai_client is None:
-            st.session_state.ai_client = OpenRouterClient(config.openrouter_api_key)
-        return st.session_state.ai_client
+def get_client():
+    cfg = st.session_state.config
+    if cfg.openrouter_api_key:
+        from src.ai_client import OpenRouterClient
+        return OpenRouterClient(cfg.openrouter_api_key)
     return None
 
-def render_sidebar():
-    """Render sidebar with configuration"""
-    with st.sidebar:
-        st.markdown("## ⚙️ Konfiguracja")
-        
-        config = st.session_state.config
-        
-        # API Key input
-        api_key = st.text_input(
-            "🔑 OpenRouter API Key",
-            value=config.openrouter_api_key,
-            type="password",
-            help="Uzyskaj klucz na https://openrouter.ai/keys"
-        )
-        
-        if api_key != config.openrouter_api_key:
-            config.openrouter_api_key = api_key
-            st.session_state.ai_client = None  # Reset client
-            config.save()
-        
-        st.markdown("---")
-        
-        # Model selection with categories
-        st.markdown("### 🤖 Wybór modelu AI")
-        
-        # Group models by tier
-        tiers = {
-            "🆓 Darmowe": [k for k, v in RAG_OPTIMIZED_MODELS.items() if v['tier'] == 'free'],
-            "⚡ Szybkie": [k for k, v in RAG_OPTIMIZED_MODELS.items() if v['tier'] == 'fast'],
-            "💎 Premium": [k for k, v in RAG_OPTIMIZED_MODELS.items() if v['tier'] == 'premium'],
-            "🔓 Open Source": [k for k, v in RAG_OPTIMIZED_MODELS.items() if v['tier'] == 'open'],
-            "💰 Budżetowe": [k for k, v in RAG_OPTIMIZED_MODELS.items() if v['tier'] == 'budget'],
-        }
-        
-        # Flatten for selectbox
-        all_models = list(RAG_OPTIMIZED_MODELS.keys())
-        
-        def format_model(model_id):
-            info = RAG_OPTIMIZED_MODELS.get(model_id, {})
-            return f"{info.get('name', model_id)} ({info.get('context', '?')})"
-        
-        selected_model = st.selectbox(
-            "Model",
-            options=all_models,
-            index=all_models.index(config.default_model) if config.default_model in all_models else 0,
-            format_func=format_model
-        )
-        
-        if selected_model != config.default_model:
-            config.default_model = selected_model
-            config.save()
-        
-        # Show model info
-        model_info = RAG_OPTIMIZED_MODELS.get(selected_model, {})
-        st.markdown(f"""
-        <div class="model-card">
-            <b>{model_info.get('name', selected_model)}</b><br>
-            <small>
-                📊 Kontekst: {model_info.get('context', 'N/A')}<br>
-                💵 Koszt: {model_info.get('cost_per_1m_tokens', 'N/A')}<br>
-                📝 {model_info.get('description', '')}
-            </small>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # Advanced settings
-        with st.expander("⚙️ Zaawansowane"):
-            config.temperature = st.slider(
-                "Temperatura (kreatywność)",
-                0.0, 1.0, config.temperature, 0.1
-            )
-            
-            config.top_k_results = st.slider(
-                "Liczba dokumentów RAG",
-                1, 10, config.top_k_results
-            )
-            
-            config.max_tokens = st.slider(
-                "Max tokenów odpowiedzi",
-                500, 8000, config.max_tokens, 500
-            )
-        
-        st.markdown("---")
-        
-        # Connection status
-        st.markdown("### 📊 Status")
-        
-        # RAG status
-        try:
-            rag = get_rag()
-            stats = rag.get_stats()
-            st.success(f"✅ RAG: {stats['total_documents']} dokumentów")
-        except Exception as e:
-            st.error(f"❌ RAG: {str(e)[:50]}")
-        
-        # API status
-        if config.openrouter_api_key:
-            st.success("✅ API Key: skonfigurowany")
-        else:
-            st.warning("⚠️ API Key: nie ustawiony")
-
-def render_main_chat():
-    """Render main chat interface"""
-    st.markdown("# 🤖 RAG Knowledge Assistant")
-    st.markdown("*Inteligentny asystent z dostępem do Twojej bazy wiedzy*")
+def ask(query: str, model: str):
+    cfg = st.session_state.config
+    st.session_state.messages.append({"role": "user", "content": query})
     
-    # Chat input
-    col1, col2 = st.columns([4, 1])
-    
-    with col1:
-        user_input = st.text_area(
-            "💬 Zadaj pytanie w języku naturalnym:",
-            height=100,
-            placeholder="Np. 'Jakie są najlepsze praktyki Docker?' lub 'Opisz architekturę backend'",
-            key="user_input"
-        )
-    
-    with col2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        search_only = st.checkbox("🔍 Tylko RAG", help="Pokaż tylko wyniki wyszukiwania bez AI")
-        stream_response = st.checkbox("📡 Streaming", value=True, help="Strumieniowanie odpowiedzi")
-    
-    # Action buttons
-    col_btn1, col_btn2, col_btn3 = st.columns([2, 1, 1])
-    
-    with col_btn1:
-        ask_button = st.button("🚀 Zapytaj", type="primary", use_container_width=True)
-    
-    with col_btn2:
-        clear_button = st.button("🗑️ Wyczyść", use_container_width=True)
-    
-    with col_btn3:
-        if st.button("📊 Statystyki", use_container_width=True):
-            show_stats()
-    
-    if clear_button:
-        st.session_state.chat_history = []
-        st.rerun()
-    
-    # Process question
-    if ask_button and user_input.strip():
-        process_question(user_input.strip(), search_only, stream_response)
-    
-    # Display chat history
-    render_chat_history()
-
-def process_question(question: str, search_only: bool, stream: bool):
-    """Process user question"""
-    config = st.session_state.config
-    rag = get_rag()
-    
-    # Add user message to history
-    st.session_state.chat_history.append({
-        'role': 'user',
-        'content': question,
-        'timestamp': datetime.now().isoformat()
-    })
-    
-    if search_only:
-        # RAG-only mode
-        with st.spinner("🔍 Przeszukuję bazę wiedzy..."):
-            results = rag.search(question, top_k=config.top_k_results)
-            
-            if results:
-                response = "📚 **Znalezione dokumenty:**\n\n"
-                for i, r in enumerate(results, 1):
-                    response += f"**{i}. {r.filename}** (trafność: {r.relevance_score:.2%})\n"
-                    response += f"```\n{r.content_preview}\n```\n\n"
-            else:
-                response = "❌ Nie znaleziono pasujących dokumentów."
-            
-            st.session_state.chat_history.append({
-                'role': 'assistant',
-                'content': response,
-                'timestamp': datetime.now().isoformat(),
-                'model': 'RAG Search'
-            })
-    else:
-        # AI + RAG mode
-        if not config.openrouter_api_key:
-            st.error("❌ Wprowadź OpenRouter API Key w panelu bocznym!")
-            return
-        
-        ai_client = get_ai_client()
-        assistant = RAGAssistant(ai_client, rag)
-        
-        if stream:
-            # Streaming response
-            response_placeholder = st.empty()
-            full_response = ""
-            
-            with st.spinner("🤖 Generuję odpowiedź..."):
-                for chunk in assistant.stream_ask(
-                    question,
-                    model=config.default_model,
-                    top_k=config.top_k_results,
-                    temperature=config.temperature,
-                    max_tokens=config.max_tokens
-                ):
-                    full_response += chunk
-                    response_placeholder.markdown(full_response + "▌")
-            
-            response_placeholder.empty()
-            
-            st.session_state.chat_history.append({
-                'role': 'assistant',
-                'content': full_response,
-                'timestamp': datetime.now().isoformat(),
-                'model': config.default_model
-            })
-        else:
-            # Non-streaming response
-            with st.spinner("🤖 Generuję odpowiedź..."):
-                response = assistant.ask(
-                    question,
-                    model=config.default_model,
-                    top_k=config.top_k_results,
-                    temperature=config.temperature,
-                    max_tokens=config.max_tokens
-                )
-                
-                if response.success:
-                    st.session_state.chat_history.append({
-                        'role': 'assistant',
-                        'content': response.content,
-                        'timestamp': datetime.now().isoformat(),
-                        'model': config.default_model,
-                        'usage': response.usage
-                    })
-                else:
-                    st.error(f"❌ Błąd: {response.error}")
-    
-    st.rerun()
-
-def render_chat_history():
-    """Render chat history"""
-    if not st.session_state.chat_history:
-        st.markdown("""
-        <div style="text-align: center; padding: 50px; color: #888;">
-            <h3>👋 Witaj w RAG Knowledge Assistant!</h3>
-            <p>Zadaj pytanie, aby rozpocząć rozmowę.</p>
-            <p><small>System przeszuka bazę wiedzy i wygeneruje inteligentną odpowiedź.</small></p>
-        </div>
-        """, unsafe_allow_html=True)
+    if not cfg.openrouter_api_key:
+        st.session_state.messages.append({"role": "assistant", "content": "⚠️ Add API Key in sidebar", "model": model})
         return
     
-    st.markdown("---")
-    st.markdown("### 💬 Historia rozmowy")
+    # Get context from RAG
+    context = "No context available."
+    try:
+        rag = get_rag()
+        context = rag.get_context_for_query(query, top_k=cfg.top_k_results)
+    except Exception as e:
+        context = f"Error: {e}"
     
-    for msg in st.session_state.chat_history:
-        if msg['role'] == 'user':
-            st.markdown(f"""
-            <div class="user-message">
-                <b>👤 Ty:</b><br>
-                {msg['content']}
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            model_name = msg.get('model', 'AI')
-            st.markdown(f"""
-            <div class="assistant-message">
-                <b>🤖 {model_name}:</b>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown(msg['content'])
+    prompt = f"""You are a helpful assistant. Answer based on context.
+Rules: Answer in user's language, be concise, use Markdown, cite sources.
 
-def show_stats():
-    """Show knowledge base statistics"""
-    rag = get_rag()
-    stats = rag.get_stats()
+Context:
+{context}"""
     
-    st.markdown("### 📊 Statystyki bazy wiedzy")
+    msgs = [{"role": "system", "content": prompt}, {"role": "user", "content": query}]
     
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown(f"""
-        <div class="stat-card">
-            <div class="stat-number">{stats['total_documents']}</div>
-            <div class="stat-label">Dokumentów</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        chars = stats['total_characters']
-        chars_display = f"{chars/1000:.1f}K" if chars > 1000 else str(chars)
-        st.markdown(f"""
-        <div class="stat-card">
-            <div class="stat-number">{chars_display}</div>
-            <div class="stat-label">Znaków</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-        <div class="stat-card">
-            <div class="stat-number">{stats['vocabulary_size']}</div>
-            <div class="stat-label">Słów w indeksie</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        types_count = len(stats['file_types'])
-        st.markdown(f"""
-        <div class="stat-card">
-            <div class="stat-number">{types_count}</div>
-            <div class="stat-label">Typów plików</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # File types breakdown
-    st.markdown("#### 📁 Typy plików")
-    for ft, count in stats['file_types'].items():
-        st.progress(count / stats['total_documents'], text=f"{ft}: {count} plików")
+    client = get_client()
+    if client:
+        resp = client.chat_completion(msgs, model, cfg.temperature, cfg.max_tokens)
+        if resp.success:
+            st.session_state.messages.append({"role": "assistant", "content": resp.content, "model": model})
+        else:
+            st.session_state.messages.append({"role": "assistant", "content": f"❌ {resp.error}", "model": model})
+
+def sidebar():
+    with st.sidebar:
+        st.markdown("## 🔧 Settings")
+        cfg = st.session_state.config
+        
+        st.markdown("#### API Key")
+        key = st.text_input("Key", cfg.openrouter_api_key, type="password", label_visibility="collapsed", placeholder="sk-or-v1-...")
+        if key != cfg.openrouter_api_key:
+            cfg.openrouter_api_key = key
+            cfg.save()
+            st.rerun()
+        st.caption("[Get API Key →](https://openrouter.ai/keys)")
+        
+        st.divider()
+        st.markdown("#### 📚 Sources")
+        
+        files = st.file_uploader("Files", ['pdf','md','txt','json'], True, label_visibility="collapsed")
+        if files and st.button("📥 Add", use_container_width=True):
+            d = Path(".cursor/knowledge")
+            d.mkdir(parents=True, exist_ok=True)
+            for f in files:
+                (d/f.name).write_bytes(f.getbuffer())
+            st.success(f"Added {len(files)} files!")
+            st.session_state.rag = None  # Reset RAG
+            st.rerun()
+        
+        # Stats (lazy load)
+        if st.button("📊 Show Stats"):
+            try:
+                stats = get_rag().get_stats()
+                st.metric("Documents", stats["total_documents"])
+                st.metric("Chunks", stats.get("total_chunks", 0))
+            except Exception as e:
+                st.error(f"Error: {e}")
+        
+        st.divider()
+        with st.expander("⚙️ Advanced"):
+            cfg.temperature = st.slider("Temperature", 0.0, 1.0, cfg.temperature, 0.1)
+            cfg.top_k_results = st.slider("RAG Results", 1, 10, cfg.top_k_results)
+            if st.button("🔄 Rebuild"):
+                st.session_state.rag = None
+                st.rerun()
 
 def main():
-    """Main application"""
-    init_session_state()
-    render_sidebar()
-    render_main_chat()
+    init()
+    cfg = st.session_state.config
+    sidebar()
     
-    # Footer
+    # Header
+    st.markdown('<div class="header"><div class="logo">📓</div><span class="title">Knowledge Assistant</span><span class="badge">RAG</span></div>', unsafe_allow_html=True)
+    
+    # Content
+    if not st.session_state.messages:
+        st.markdown('<div class="welcome"><div class="welcome-title">What would you like to explore?</div><div class="welcome-sub">Ask questions about your knowledge base</div></div>', unsafe_allow_html=True)
+        
+        sugs = [("🐳", "Docker best practices"), ("🏗️", "Backend architecture"), ("🤖", "How does RAG work?"), ("⚡", "What is Cursor AI?")]
+        cols = st.columns(4)
+        for i, (icon, text) in enumerate(sugs):
+            with cols[i]:
+                if st.button(f"{icon} {text}", key=f"s{i}", use_container_width=True):
+                    ask(text, st.session_state.model)
+                    st.rerun()
+    else:
+        for m in st.session_state.messages:
+            if m["role"] == "user":
+                st.markdown(f'<div class="user-msg">{m["content"]}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="bot-msg">', unsafe_allow_html=True)
+                st.markdown(m["content"])
+                if "model" in m:
+                    info = RAG_OPTIMIZED_MODELS.get(m["model"], {})
+                    st.markdown(f'<div class="model-tag">🤖 {info.get("name", m["model"].split("/")[-1])}</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Spacer
+    st.markdown("<div style='height:80px'></div>", unsafe_allow_html=True)
+    
+    # Model selector
     st.markdown("---")
-    st.markdown("""
-    <div style="text-align: center; color: #666; font-size: 0.8em;">
-        🤖 RAG Knowledge Assistant v2.0 | 
-        Powered by OpenRouter | 
-        Built with Streamlit
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("**Model:**")
+    mcols = st.columns(len(QUICK_MODELS))
+    for i, (mid, info) in enumerate(QUICK_MODELS.items()):
+        with mcols[i]:
+            sel = st.session_state.model == mid
+            if st.button(f"{info['icon']} {info['name']}", key=f"m{i}", type="primary" if sel else "secondary", use_container_width=True):
+                st.session_state.model = mid
+                cfg.default_model = mid
+                cfg.save()
+                st.rerun()
+    
+    # Input
+    c1, c2 = st.columns([9, 1])
+    with c1:
+        q = st.text_input("Q", placeholder="Ask anything...", label_visibility="collapsed", key="q")
+    with c2:
+        send = st.button("➤", type="primary", use_container_width=True)
+    
+    if q and send:
+        with st.spinner("Thinking..."):
+            ask(q, st.session_state.model)
+        st.rerun()
+    
+    if st.session_state.messages and st.button("🗑️ Clear"):
+        st.session_state.messages = []
+        st.rerun()
 
 if __name__ == "__main__":
     main()
-
