@@ -23,7 +23,7 @@ Inteligentny asystent wiedzy z interfejsem graficznym, który łączy wyszukiwan
 ```bash
 # Klonuj repozytorium
 git clone <https://github.com/Hipson47/For7>
-cd Systemv2
+cd For7
 
 # Zainstaluj zależności
 pip install -r requirements.txt
